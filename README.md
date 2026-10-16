@@ -8,7 +8,7 @@ The health center posts available schedules first. Patients can only request app
 
 ## Features
 
-- Resident portal for registration, login, profile updates, and online appointment requests
+- Resident portal for registration, login, email verification-code password recovery, profile updates, and online appointment requests
 - Separate admin dashboard for appointment management, schedule posting, and clinic staff management
 - Service list for consultation, prenatal, immunization, newborn/child injection, child growth monitoring, family planning, and follow-up checkup
 - Automatic appointment code
@@ -42,6 +42,7 @@ The app does not create a default administrator account. Create an admin account
 - Create a MySQL database and a dedicated database user in cPanel. Grant that user access to the app database only.
 - Save the connection settings in `/home/<cpanel-user>/config.local.php`, one level above `public_html`. Use `config.local.example.php` as a template, and replace every placeholder before use.
 - Import `schema.sql` into the new database. Add clinic staff and appointment schedules only after confirming that the names, contact details, availability, and services are accurate.
+- Set `mail_from` in the private `config.local.php` to a mailbox on the domain. Password recovery uses PHP `mail()` on the hosting account; confirm the mailbox/domain email service and deliverability are configured before relying on recovery emails.
 - Point the domain to the hosting account and enable SSL before collecting resident information.
 - Keep `config.local.php`, database exports, and uploaded documents outside version control and outside the public web root.
 

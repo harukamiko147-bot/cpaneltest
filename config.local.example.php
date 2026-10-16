@@ -7,5 +7,6 @@ return [
     'username' => '<cpanel-user>_<database-user>',
     'password' => 'REPLACE_WITH_A_UNIQUE_DATABASE_PASSWORD',
     'charset' => 'utf8mb4',
+    'mail_from' => 'no-reply@barangaybalangan.site',
 ];
 
