@@ -1735,8 +1735,8 @@ function schedule_display_label(array $schedule): string
           <div class="eyebrow">Resident dashboard</div>
           <h1>Book your health center appointment with less friction.</h1>
           <div class="cta-row">
-            <a class="btn btn-primary" href="#book">Request appointment</a>
-            <a class="btn btn-secondary" href="#appointments">View my appointments</a>
+            <a class="btn btn-primary" href="index.php?page=schedule">Request appointment</a>
+            <a class="btn btn-secondary" href="index.php?page=appointments">View my appointments</a>
           </div>
           <div class="hero-stats">
             <div class="stat"><span>Open schedules</span><strong data-count="<?php echo $stats['open_schedules']; ?>"><?php echo $stats['open_schedules']; ?></strong></div>
@@ -1786,6 +1786,30 @@ function schedule_display_label(array $schedule): string
 
 <script>
   (() => {
+    const portalLayout = document.getElementById('portalLayout');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    if (portalLayout && menuToggle && sidebarBackdrop) {
+      const closeSidebar = () => {
+        portalLayout.classList.remove('sidebar-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.setAttribute('aria-label', 'Open navigation');
+      };
+      menuToggle.addEventListener('click', () => {
+        const isOpen = portalLayout.classList.toggle('sidebar-open');
+        menuToggle.setAttribute('aria-expanded', String(isOpen));
+        menuToggle.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+      });
+      sidebarBackdrop.addEventListener('click', closeSidebar);
+      portalLayout.querySelectorAll('.sidebar-nav a').forEach((link) => {
+        link.addEventListener('click', closeSidebar);
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeSidebar();
+      });
+    }
+
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const revealItems = document.querySelectorAll('.reveal');
