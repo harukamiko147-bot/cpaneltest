@@ -1,0 +1,90 @@
+<mxfile host="Electron" agent="Codex">
+  <diagram id="bbhc-erd-fixed" name="Database ERD">
+    <mxGraphModel dx="832" dy="446" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1" value="Barangay Balagan Health Center â€” Database Entity Relationship Diagram" vertex="1">
+          <mxGeometry height="35" width="980" x="315" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#666666" value="PK = Primary Key   |   FK = Foreign Key   |   UQ = Unique Key   |   Crowâ€™s foot indicates one-to-many" vertex="1">
+          <mxGeometry height="25" width="750" x="430" y="58" as="geometry" />
+        </mxCell>
+        <mxCell id="usersH" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6c8ebf;fontColor=#ffffff;strokeColor=#4e6d8f;fontStyle=1;align=center" value="USERS" vertex="1">
+          <mxGeometry height="34" width="265" x="60" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="usersB" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;fontSize=12" value="PK  id : INT UNSIGNED&lt;br&gt;full_name : VARCHAR(120)&lt;br&gt;UQ  username : VARCHAR(60)&lt;br&gt;UQ  email : VARCHAR(120)&lt;br&gt;password_hash : VARCHAR(255)&lt;br&gt;role : ENUM(user, admin)&lt;br&gt;birthdate : DATE&lt;br&gt;gender : ENUM(Female, Male, Other)&lt;br&gt;address : VARCHAR(255)&lt;br&gt;cellphone : VARCHAR(30)&lt;br&gt;photo_path : VARCHAR(255), NULL&lt;br&gt;created_at, updated_at : TIMESTAMP" vertex="1">
+          <mxGeometry height="240" width="265" x="60" y="169" as="geometry" />
+        </mxCell>
+        <mxCell id="servicesH" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6c8ebf;fontColor=#ffffff;strokeColor=#4e6d8f;fontStyle=1;align=center" value="SERVICES" vertex="1">
+          <mxGeometry height="34" width="265" x="430" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="servicesB" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;fontSize=12" value="PK  id : INT UNSIGNED&lt;br&gt;UQ  name : VARCHAR(120)&lt;br&gt;description : VARCHAR(255)" vertex="1">
+          <mxGeometry height="92" width="265" x="430" y="169" as="geometry" />
+        </mxCell>
+        <mxCell id="schedulesH" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d6b656;fontColor=#000000;strokeColor=#a68832;fontStyle=1;align=center" value="SCHEDULES" vertex="1">
+          <mxGeometry height="34" width="300" x="810" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="schedulesB" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;fontSize=12" value="PK  id : INT UNSIGNED&lt;br&gt;FK  service_id : INT UNSIGNED&lt;br&gt;FK  staff_id : INT UNSIGNED, NULL&lt;br&gt;provider_name : VARCHAR(120)&lt;br&gt;provider_role : VARCHAR(80)&lt;br&gt;schedule_date : DATE&lt;br&gt;start_time, end_time : TIME&lt;br&gt;slot_limit : INT UNSIGNED&lt;br&gt;status : ENUM(open, closed, completed, cancelled)&lt;br&gt;notes : TEXT, NULL&lt;br&gt;created_at : TIMESTAMP&lt;br&gt;UQ  service / provider / date / time" vertex="1">
+          <mxGeometry height="240" width="300" x="810" y="169" as="geometry" />
+        </mxCell>
+        <mxCell id="appointmentsH" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#82b366;fontColor=#ffffff;strokeColor=#5b8c46;fontStyle=1;align=center" value="APPOINTMENTS" vertex="1">
+          <mxGeometry height="34" width="315" x="1250" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="appointmentsB" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;fontSize=12" value="PK  id : INT UNSIGNED&lt;br&gt;FK  user_id : INT UNSIGNED, NULL&lt;br&gt;FK  patient_id : INT UNSIGNED&lt;br&gt;FK  schedule_id : INT UNSIGNED&lt;br&gt;UQ  appointment_code : VARCHAR(30)&lt;br&gt;concern : TEXT, NULL&lt;br&gt;status : ENUM(pending, confirmed, completed,&lt;br&gt;          cancelled, no_show)&lt;br&gt;remarks : TEXT, NULL&lt;br&gt;created_at, updated_at : TIMESTAMP" vertex="1">
+          <mxGeometry height="210" width="315" x="1250" y="324" as="geometry" />
+        </mxCell>
+        <mxCell id="staffH" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6c8ebf;fontColor=#ffffff;strokeColor=#4e6d8f;fontStyle=1;align=center" value="CLINIC_STAFF" vertex="1">
+          <mxGeometry height="34" width="265" x="430" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="staffB" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;fontSize=12" value="PK  id : INT UNSIGNED&lt;br&gt;full_name : VARCHAR(120)&lt;br&gt;role : ENUM(Doctor, Nurse, Midwife)&lt;br&gt;specialty : VARCHAR(160)&lt;br&gt;contact_number : VARCHAR(30)&lt;br&gt;availability : VARCHAR(120)&lt;br&gt;status : ENUM(active, inactive)&lt;br&gt;photo_path : VARCHAR(255), NULL&lt;br&gt;notes : TEXT, NULL&lt;br&gt;created_at, updated_at : TIMESTAMP" vertex="1">
+          <mxGeometry height="205" width="265" x="430" y="599" as="geometry" />
+        </mxCell>
+        <mxCell id="patientsH" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6c8ebf;fontColor=#ffffff;strokeColor=#4e6d8f;fontStyle=1;align=center" value="PATIENTS" vertex="1">
+          <mxGeometry height="34" width="300" x="810" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="patientsB" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;fontSize=12" value="PK  id : INT UNSIGNED&lt;br&gt;full_name : VARCHAR(120)&lt;br&gt;birthdate : DATE&lt;br&gt;gender : ENUM(Female, Male, Other)&lt;br&gt;address : VARCHAR(255)&lt;br&gt;cellphone : VARCHAR(30)&lt;br&gt;guardian_name : VARCHAR(120), NULL&lt;br&gt;created_at : TIMESTAMP" vertex="1">
+          <mxGeometry height="165" width="300" x="810" y="634" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" edge="1" parent="1" source="usersB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontSize=11;labelBackgroundColor=#ffffff" target="appointmentsB" value="creates  0..1 : many">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="375" y="455" />
+              <mxPoint x="375" y="850" />
+              <mxPoint x="1190" y="850" />
+              <mxPoint x="1190" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r2" edge="1" parent="1" source="patientsB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontSize=11;labelBackgroundColor=#ffffff" target="appointmentsB" value="has  1 : many">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1165" y="717" />
+              <mxPoint x="1165" y="500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r3" edge="1" parent="1" source="servicesB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontSize=11;labelBackgroundColor=#ffffff" target="schedulesB" value="defines  1 : many">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" edge="1" parent="1" source="staffB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontSize=11;labelBackgroundColor=#ffffff" target="schedulesB" value="assigned  0..1 : many">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="700" />
+              <mxPoint x="760" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r5" edge="1" parent="1" source="schedulesB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontSize=11;labelBackgroundColor=#ffffff" target="appointmentsB" value="holds  1 : many">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1180" y="290" />
+              <mxPoint x="1180" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+
