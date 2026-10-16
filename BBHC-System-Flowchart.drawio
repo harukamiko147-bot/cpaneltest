@@ -1,0 +1,152 @@
+<mxfile host="Electron" agent="Codex">
+  <diagram id="bbhc-flow" name="System Flowchart">
+    <mxGraphModel dx="957" dy="513" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1" value="Barangay Balagan Health Center Online Appointment Scheduling System â€” Flowchart" vertex="1">
+          <mxGeometry height="40" width="820" x="330" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="resident" parent="1" style="swimlane;horizontal=1;startSize=30;fillColor=#dae8fc;swimlaneFillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1" value="RESIDENT PORTAL" vertex="1">
+          <mxGeometry height="760" width="700" x="10" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="rstart" parent="resident" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="Start" vertex="1">
+          <mxGeometry height="45" width="100" x="45" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="account" parent="resident" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf" value="Register account or log in" vertex="1">
+          <mxGeometry height="75" width="150" x="190" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" parent="resident" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" value="Credentials valid?" vertex="1">
+          <mxGeometry height="95" width="130" x="395" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="retry" parent="resident" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" value="Show validation or login error" vertex="1">
+          <mxGeometry height="65" width="140" x="540" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="dashboard" parent="resident" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf" value="Resident dashboard: view services and open schedules" vertex="1">
+          <mxGeometry height="75" width="165" x="190" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="select" parent="resident" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf" value="Select a schedule and enter patient details" vertex="1">
+          <mxGeometry height="75" width="170" x="410" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="capacity" parent="resident" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" value="Open schedule with remaining slots?" vertex="1">
+          <mxGeometry height="105" width="145" x="250" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="full" parent="resident" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" value="Notify resident: schedule unavailable or full" vertex="1">
+          <mxGeometry height="70" width="150" x="500" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="book" parent="resident" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" value="Create patient record and pending appointment code" vertex="1">
+          <mxGeometry height="75" width="180" x="90" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="track" parent="resident" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf" value="Track appointment status and staff remarks" vertex="1">
+          <mxGeometry height="75" width="170" x="355" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="end" parent="resident" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="End" vertex="1">
+          <mxGeometry height="50" width="80" x="550" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="resident" source="rstart" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="account">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="resident" source="account" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="resident" source="auth" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="dashboard" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="resident" source="auth" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="retry" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="resident" source="dashboard" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="select">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="resident" source="select" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="capacity">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="resident" source="capacity" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="book" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="resident" source="capacity" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="full" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="resident" source="book" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="track">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="resident" source="track" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" parent="1" style="swimlane;horizontal=1;startSize=30;fillColor=#fff2cc;swimlaneFillColor=#ffffff;strokeColor=#d6b656;fontStyle=1" value="ADMIN PORTAL" vertex="1">
+          <mxGeometry height="760" width="700" x="780" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="astart" parent="admin" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="Start" vertex="1">
+          <mxGeometry height="45" width="100" x="40" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="alogin" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656" value="Admin log in" vertex="1">
+          <mxGeometry height="75" width="130" x="180" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="authorize" parent="admin" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" value="Admin role?" vertex="1">
+          <mxGeometry height="95" width="120" x="360" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="denied" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" value="Deny access" vertex="1">
+          <mxGeometry height="65" width="120" x="535" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="manage" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656" value="Admin dashboard: manage appointments, schedules, and clinic staff" vertex="1">
+          <mxGeometry height="80" width="190" x="190" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="post" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656" value="Create/update open schedule with service, provider, time, and slot limit" vertex="1">
+          <mxGeometry height="70" width="170" x="60" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="review" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656" value="Review pending appointment and patient information" vertex="1">
+          <mxGeometry height="85" width="180" x="275" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="status" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" value="Set status: confirmed, completed, cancelled, or no show; save remarks" vertex="1">
+          <mxGeometry height="85" width="160" x="500" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="staff" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656" value="Add, edit, or remove clinic staff" vertex="1">
+          <mxGeometry height="70" width="160" x="155" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="report" parent="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656" value="Monitor dashboard counts and schedule capacity" vertex="1">
+          <mxGeometry height="70" width="175" x="415" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" edge="1" parent="admin" source="astart" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="alogin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" edge="1" parent="admin" source="alogin" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="authorize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" edge="1" parent="admin" source="authorize" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="manage" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" edge="1" parent="admin" source="authorize" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="denied" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" edge="1" parent="admin" source="manage" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="post">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a6" edge="1" parent="admin" source="manage" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a7" edge="1" parent="admin" source="review" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="status">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a8" edge="1" parent="admin" source="manage" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="staff">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a9" edge="1" parent="admin" source="staff" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block" target="report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="db" parent="1" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="MySQL Database" vertex="1">
+          <mxGeometry height="80" width="160" x="690" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" edge="1" parent="1" source="book" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1" target="db" value="read/write">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" edge="1" parent="1" source="post" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1" target="db" value="read/write">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" edge="1" parent="1" source="status" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;dashed=1" target="db" value="read/write">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+
