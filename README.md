@@ -35,10 +35,13 @@ If your local MySQL root account has a password, set `BBHC_DB_PASS` in your envi
 
 ## Admin Login
 
-The app auto-seeds a default admin account on first run:
+The app does not create a default administrator account. Create an admin account for an authorized clinic staff member in the `users` table before opening the admin dashboard at `admin.php`. Do not use a shared or default password. Resident users should use `index.php`.
 
-- Username: `admin`
-- Password: `Admin@12345`
+## cPanel deployment
 
-Use `admin.php` for the admin dashboard. Resident users should use `index.php`.
+- Create a MySQL database and a dedicated database user in cPanel. Grant that user access to the app database only.
+- Save the connection settings in `/home/<cpanel-user>/config.local.php`, one level above `public_html`. Use `config.local.example.php` as a template, and replace every placeholder before use.
+- Import `schema.sql` into the new database. Add clinic staff and appointment schedules only after confirming that the names, contact details, availability, and services are accurate.
+- Point the domain to the hosting account and enable SSL before collecting resident information.
+- Keep `config.local.php`, database exports, and uploaded documents outside version control and outside the public web root.
 
