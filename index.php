@@ -74,92 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if ($action === 'request_password_reset') {
-        $email = strtolower(trim(post_string('email')));
-        $genericMessage = 'If an account matches that email and email delivery is configured, a verification code will be sent. Check your inbox and spam folder.';
-
-        $lastResetRequest = (int) ($_SESSION['password_reset_last_request'] ?? 0);
-        if (time() - $lastResetRequest >= 60) {
-            $_SESSION['password_reset_last_request'] = time();
-            $userStmt = $pdo->prepare('SELECT id, email FROM users WHERE LOWER(email) = :email LIMIT 1');
-            $userStmt->execute([':email' => $email]);
-            $resetUser = $userStmt->fetch();
-
-            if ($resetUser) {
-                $rateStmt = $pdo->prepare('SELECT COUNT(*) FROM password_reset_tokens WHERE user_id = :user_id AND created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)');
-                $rateStmt->execute([':user_id' => $resetUser['id']]);
-                if ((int) $rateStmt->fetchColumn() < 3) {
-                    $pdo->prepare('UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = :user_id AND used_at IS NULL')
-                        ->execute([':user_id' => $resetUser['id']]);
-
-                    $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-                    $insert = $pdo->prepare('INSERT INTO password_reset_tokens (user_id, code_hash, expires_at) VALUES (:user_id, :code_hash, DATE_ADD(NOW(), INTERVAL 10 MINUTE))');
-                    $insert->execute([
-                        ':user_id' => $resetUser['id'],
-                        ':code_hash' => password_hash($code, PASSWORD_DEFAULT),
-                    ]);
-
-                    $config = app_config();
-                    $subject = 'Your Barangay Balagan password reset code';
-                    $body = "Your password reset verification code is: {$code}\n\nThis code expires in 10 minutes and can only be used once. If you did not request this code, you can ignore this email.";
-                    if (!send_app_mail((string) $resetUser['email'], $subject, $body, $config)) {
-                        $pdo->prepare('UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = :user_id AND used_at IS NULL')
-                            ->execute([':user_id' => $resetUser['id']]);
-                    }
-                }
-            }
-        }
-
-        flash_to_page('forgot', $genericMessage);
-    }
-
-    if ($action === 'reset_password') {
-        $email = strtolower(trim(post_string('email')));
-        $code = trim((string) ($_POST['verification_code'] ?? ''));
-        $password = (string) ($_POST['new_password'] ?? '');
-        $confirmPassword = (string) ($_POST['confirm_password'] ?? '');
-
-        if (strlen($password) < 8) {
-            flash_to_page('forgot', 'Use a password with at least 8 characters.', 'error');
-        }
-        if ($password !== $confirmPassword) {
-            flash_to_page('forgot', 'Passwords do not match.', 'error');
-        }
-        if (!preg_match('/^\d{6}$/', $code)) {
-            flash_to_page('forgot', 'The code is invalid or expired. Request a new code and try again.', 'error');
-        }
-
-        $tokenStmt = $pdo->prepare(
-            'SELECT pr.*, u.id AS reset_user_id
-             FROM password_reset_tokens pr
-             JOIN users u ON u.id = pr.user_id
-             WHERE LOWER(u.email) = :email AND pr.used_at IS NULL
-               AND pr.expires_at > NOW() AND pr.attempts < 5
-             ORDER BY pr.created_at DESC LIMIT 1'
-        );
-        $tokenStmt->execute([':email' => $email]);
-        $resetToken = $tokenStmt->fetch();
-
-        if (!$resetToken || !password_verify($code, (string) $resetToken['code_hash'])) {
-            if ($resetToken) {
-                $pdo->prepare('UPDATE password_reset_tokens SET attempts = attempts + 1, used_at = IF(attempts + 1 >= 5, NOW(), used_at) WHERE id = :id')
-                    ->execute([':id' => $resetToken['id']]);
-            }
-            flash_to_page('forgot', 'The code is invalid or expired. Request a new code and try again.', 'error');
-        }
-
-        $pdo->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id')
-            ->execute([
-                ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                ':id' => $resetToken['reset_user_id'],
-            ]);
-        $pdo->prepare('UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = :user_id AND used_at IS NULL')
-            ->execute([':user_id' => $resetToken['reset_user_id']]);
-
-        unset($_SESSION['password_reset_last_request']);
-        flash_to_page('login', 'Password reset successfully. You can now log in.');
-    }
-
     if ($action === 'login') {
         if (($_POST['terms_accepted'] ?? '') !== '1') {
             flash_to_page('login', 'Please agree to the Terms and Conditions before logging in.', 'error');
@@ -313,7 +227,7 @@ if (is_logged_in() && is_admin()) {
     redirect_to('admin.php?page=dashboard');
 }
 
-if (!is_logged_in() && !in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright', 'forgot'], true)) {
+if (!is_logged_in() && !in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright'], true)) {
     redirect_to('index.php?page=login');
 }
 
@@ -1538,7 +1452,7 @@ function schedule_display_label(array $schedule): string
   <div class="glow one"></div>
   <div class="glow two"></div>
 
-<?php if (!is_logged_in() && in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright', 'forgot'], true)): ?>
+<?php if (!is_logged_in() && in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright'], true)): ?>
   <main class="auth-grid">
     <section class="auth-card reveal">
       <div class="auth-intro">
@@ -1558,24 +1472,6 @@ function schedule_display_label(array $schedule): string
         <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?>"><?php echo e($message); ?></div><?php endif; ?>
         <?php if (isset($legalPages[$page])): ?>
           <?php render_legal_page($legalPages[$page], 'index.php?page=login', 'Back to login'); ?>
-        <?php elseif ($page === 'forgot'): ?>
-          <h2>Forgot Password</h2>
-          <p class="muted">Request a six-digit verification code, then use it below to choose a new password. The code expires after 10 minutes.</p>
-          <form method="post" class="form-grid">
-            <input type="hidden" name="action" value="request_password_reset">
-            <div class="field full"><label for="reset-email">Account email</label><input id="reset-email" name="email" type="email" autocomplete="email" required></div>
-            <div class="field full"><button class="btn btn-primary" type="submit">Send verification code</button></div>
-          </form>
-          <hr>
-          <form method="post" class="form-grid">
-            <input type="hidden" name="action" value="reset_password">
-            <div class="field full"><label for="verify-email">Account email</label><input id="verify-email" name="email" type="email" autocomplete="email" required></div>
-            <div class="field full"><label for="verification-code">Six-digit verification code</label><input id="verification-code" name="verification_code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></div>
-            <div class="field"><label for="new-password">New password</label><input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="8" required></div>
-            <div class="field"><label for="confirm-password">Confirm new password</label><input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" required></div>
-            <div class="field full"><button class="btn btn-primary" type="submit">Reset password</button></div>
-          </form>
-          <p class="muted"><a href="index.php?page=login"><strong>Back to login</strong></a></p>
         <?php elseif ($page === 'register'): ?>
           <h2>Create Account</h2>
           <form method="post" class="form-grid">
@@ -1605,7 +1501,6 @@ function schedule_display_label(array $schedule): string
             </div>
             <div class="field full"><button class="btn btn-primary" type="submit">Log in</button></div>
           </form>
-          <p class="muted"><a href="index.php?page=forgot"><strong>Forgot your password?</strong></a></p>
           <p class="muted">No account yet? <a href="index.php?page=register"><strong>Create one here</strong></a>.</p>
         <?php endif; ?>
       </div>

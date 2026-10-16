@@ -7,11 +7,5 @@ return [
     'username' => '<cpanel-user>_<database-user>',
     'password' => 'REPLACE_WITH_A_UNIQUE_DATABASE_PASSWORD',
     'charset' => 'utf8mb4',
-    'smtp_host' => 'server415.web-hosting.com',
-    'smtp_port' => 465,
-    'smtp_encryption' => 'ssl',
-    'smtp_username' => 'no-reply@barangaybalangan.site',
-    'smtp_password' => 'SET_THIS_ONLY_IN_PRIVATE_CONFIG',
-    'mail_from' => 'no-reply@barangaybalangan.site',
 ];
 
