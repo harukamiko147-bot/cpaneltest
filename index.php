@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'request_password_reset') {
         $email = strtolower(trim(post_string('email')));
-        $genericMessage = 'If an account matches that email, a verification code will be sent. Check your inbox and spam folder.';
+        $genericMessage = 'If an account matches that email and email delivery is configured, a verification code will be sent. Check your inbox and spam folder.';
 
         $lastResetRequest = (int) ($_SESSION['password_reset_last_request'] ?? 0);
         if (time() - $lastResetRequest >= 60) {
@@ -100,16 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
 
                     $config = app_config();
-                    $fromAddress = (string) ($config['mail_from'] ?? 'no-reply@barangaybalangan.site');
-                    if (!filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
-                        $fromAddress = 'no-reply@barangaybalangan.site';
-                    }
                     $subject = 'Your Barangay Balagan password reset code';
                     $body = "Your password reset verification code is: {$code}\n\nThis code expires in 10 minutes and can only be used once. If you did not request this code, you can ignore this email.";
-                    $headers = "From: Barangay Balagan Health Center <{$fromAddress}>\r\n";
-                    $headers .= "Reply-To: {$fromAddress}\r\n";
-                    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                    if (!@mail((string) $resetUser['email'], $subject, $body, $headers)) {
+                    if (!send_app_mail((string) $resetUser['email'], $subject, $body, $config)) {
                         $pdo->prepare('UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = :user_id AND used_at IS NULL')
                             ->execute([':user_id' => $resetUser['id']]);
                     }

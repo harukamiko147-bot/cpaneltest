@@ -42,7 +42,7 @@ The app does not create a default administrator account. Create an admin account
 - Create a MySQL database and a dedicated database user in cPanel. Grant that user access to the app database only.
 - Save the connection settings in `/home/<cpanel-user>/config.local.php`, one level above `public_html`. Use `config.local.example.php` as a template, and replace every placeholder before use.
 - Import `schema.sql` into the new database. Add clinic staff and appointment schedules only after confirming that the names, contact details, availability, and services are accurate.
-- Set `mail_from` in the private `config.local.php` to a mailbox on the domain. Password recovery uses PHP `mail()` on the hosting account; confirm the mailbox/domain email service and deliverability are configured before relying on recovery emails.
+- Create a cPanel email mailbox on the domain and add the SMTP settings from `config.local.example.php` to the private `/home/<cpanel-user>/config.local.php`. Use the cPanel **Connect Devices** values for the SMTP hostname if it differs from the example; keep the mailbox password only in that private file. Password recovery requires authenticated SMTP delivery.
 - Point the domain to the hosting account and enable SSL before collecting resident information.
 - Keep `config.local.php`, database exports, and uploaded documents outside version control and outside the public web root.
 

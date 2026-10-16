@@ -29,6 +29,107 @@ function app_config(): array
     ];
 }
 
+function smtp_read_response($socket, array $expectedCodes, string $phase): void
+{
+    $lastLine = '';
+    do {
+        $line = fgets($socket, 515);
+        if ($line === false) {
+            throw new RuntimeException('SMTP connection closed during ' . $phase . '.');
+        }
+        $lastLine = $line;
+    } while (isset($line[3]) && $line[3] === '-');
+
+    $code = (int) substr($lastLine, 0, 3);
+    if (!in_array($code, $expectedCodes, true)) {
+        throw new RuntimeException('SMTP rejected ' . $phase . ' (response ' . $code . ').');
+    }
+}
+
+function smtp_command($socket, string $command, array $expectedCodes, string $phase): void
+{
+    if (fwrite($socket, $command . "\r\n") === false) {
+        throw new RuntimeException('Could not send SMTP ' . $phase . ' command.');
+    }
+    smtp_read_response($socket, $expectedCodes, $phase);
+}
+
+function send_app_mail(string $to, string $subject, string $body, array $config): bool
+{
+    $smtpHost = trim((string) ($config['smtp_host'] ?? ''));
+    $smtpUser = trim((string) ($config['smtp_username'] ?? ''));
+    $smtpPass = (string) ($config['smtp_password'] ?? '');
+
+    if ($smtpHost === '' || $smtpUser === '' || $smtpPass === '') {
+        error_log('Password reset email is not configured: add SMTP settings to the private config.local.php.');
+        return false;
+    }
+
+    $port = (int) ($config['smtp_port'] ?? 465);
+    $encryption = strtolower(trim((string) ($config['smtp_encryption'] ?? 'ssl')));
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL) || !filter_var($smtpUser, FILTER_VALIDATE_EMAIL)
+        || !in_array($encryption, ['ssl', 'tls'], true) || $port < 1 || $port > 65535) {
+        error_log('Password reset SMTP configuration is invalid.');
+        return false;
+    }
+
+    $from = (string) ($config['mail_from'] ?? $smtpUser);
+    if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
+        $from = $smtpUser;
+    }
+
+    $socket = false;
+    try {
+        $endpoint = ($encryption === 'ssl' ? 'ssl://' : 'tcp://') . $smtpHost . ':' . $port;
+        $socket = stream_socket_client($endpoint, $errorCode, $errorMessage, 15, STREAM_CLIENT_CONNECT);
+        if ($socket === false) {
+            throw new RuntimeException('Could not connect to configured SMTP server (error ' . $errorCode . ').');
+        }
+        stream_set_timeout($socket, 15);
+        smtp_read_response($socket, [220], 'connection');
+
+        smtp_command($socket, 'EHLO barangaybalangan.site', [250], 'EHLO');
+        if ($encryption === 'tls') {
+            smtp_command($socket, 'STARTTLS', [220], 'STARTTLS');
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new RuntimeException('Could not enable TLS encryption.');
+            }
+            smtp_command($socket, 'EHLO barangaybalangan.site', [250], 'EHLO after TLS');
+        }
+
+        smtp_command($socket, 'AUTH LOGIN', [334], 'authentication');
+        smtp_command($socket, base64_encode($smtpUser), [334], 'username authentication');
+        smtp_command($socket, base64_encode($smtpPass), [235], 'password authentication');
+        smtp_command($socket, 'MAIL FROM:<' . $from . '>', [250], 'sender');
+        smtp_command($socket, 'RCPT TO:<' . $to . '>', [250, 251], 'recipient');
+        smtp_command($socket, 'DATA', [354], 'message data');
+
+        $safeSubject = str_replace(["\r", "\n"], '', $subject);
+        $message = "From: Barangay Balagan Health Center <{$from}>\r\n";
+        $message .= "To: <{$to}>\r\n";
+        $message .= "Subject: {$safeSubject}\r\n";
+        $message .= 'Date: ' . date(DATE_RFC2822) . "\r\n";
+        $message .= "MIME-Version: 1.0\r\n";
+        $message .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $message .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+        $normalizedBody = preg_replace("/\r\n|\r|\n/", "\r\n", $body) ?? $body;
+        $message .= preg_replace('/(^|\r\n)\./', '$1..', $normalizedBody) . "\r\n.\r\n";
+        if (fwrite($socket, $message) === false) {
+            throw new RuntimeException('Could not send SMTP message data.');
+        }
+        smtp_read_response($socket, [250], 'message acceptance');
+        smtp_command($socket, 'QUIT', [221], 'disconnect');
+        fclose($socket);
+        return true;
+    } catch (Throwable $exception) {
+        error_log('Password reset SMTP delivery failed: ' . $exception->getMessage());
+        if (is_resource($socket)) {
+            fclose($socket);
+        }
+        return false;
+    }
+}
+
 function db(): PDO
 {
     static $pdo = null;
