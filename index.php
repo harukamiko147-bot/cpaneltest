@@ -227,7 +227,7 @@ if (is_logged_in() && is_admin()) {
     redirect_to('admin.php?page=dashboard');
 }
 
-if (!is_logged_in() && !in_array($page, ['login', 'register', 'terms'], true)) {
+if (!is_logged_in() && !in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright'], true)) {
     redirect_to('index.php?page=login');
 }
 
@@ -332,6 +332,34 @@ if ($page === 'slip') {
     exit;
 }
 
+$legalPages = [
+ 'privacy' => ['title'=>'Privacy Policy','paragraphs'=>[
+  'This website is a demonstration and academic project for an SIA subject. It is not an official Barangay Balagan Health Center service. Please do not submit real patient records, health information, or other sensitive personal information.',
+  'The demo application may store account details, profile information, appointment form entries, and uploaded profile photos in its database or hosting account so its features can be demonstrated. Access and handling depend on the project code and hosting configuration.',
+  'If you have entered real personal information into this demonstration, contact the project owner through the channel where you accessed the site and request its removal. Do not use the site for emergencies or clinical care.',
+ ]],
+ 'terms' => ['title'=>'Terms & Conditions','paragraphs'=>[
+  'This website is created for demonstration and academic purposes only as part of an SIA subject project. It is not a real company, official service, registered business, or commercial website. No claims are made regarding actual business operations, legal standing, or real-world services.',
+  'The appointment and account features are demonstrations only. Do not rely on this site to request or confirm real health services, receive medical advice, or communicate an emergency. Contact the appropriate local health facility or emergency services for real needs.',
+  'Use the demonstration respectfully and do not enter real patient, medical, or other sensitive personal information. Content may be reviewed or removed by project administrators.',
+ ]],
+ 'moderation' => ['title'=>'Moderation','paragraphs'=>[
+  'This is an academic demonstration website, not an official channel for the barangay or a health facility. Information submitted through forms may be visible to project administrators for demonstration and maintenance.',
+  'Do not submit real medical records, sensitive health details, threats, unlawful material, spam, or content that targets or harasses another person. Project administrators may review, restrict, or remove submitted content or accounts in the demonstration.',
+  'For real health questions, appointments, or emergencies, contact the appropriate health provider directly.',
+ ]],
+ 'copyright' => ['title'=>'Copyright','paragraphs'=>[
+  '© 2026 Barangay Balagan Health Center demonstration project. This website is presented for academic and demonstration purposes only and does not represent an official government or health-center service.',
+  'The logo shown on this site was supplied for this project. Other names, marks, and materials remain with their respective owners. No affiliation or endorsement is implied.',
+  'For questions about material displayed on this demonstration, contact the project owner through the channel where the site was shared.',
+ ]],
+];
+function render_legal_page(array $content, string $backUrl, string $backLabel): void
+{
+ echo '<h2>' . e($content['title']) . '</h2><div class="terms-copy">';
+ foreach ($content['paragraphs'] as $paragraph) echo '<p>' . e($paragraph) . '</p>';
+ echo '</div><p class="muted"><a href="' . e($backUrl) . '"><strong>' . e($backLabel) . '</strong></a></p>';
+}
 function schedule_display_label(array $schedule): string
 {
     $remaining = max(0, (int) $schedule['slot_limit'] - (int) $schedule['booked_slots']);
@@ -435,37 +463,7 @@ function schedule_display_label(array $schedule): string
       align-items: center;
       gap: 14px;
     }
-    .brand-mark {
-      width: 54px;
-      height: 54px;
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(222, 245, 243, 0.88));
-      box-shadow: var(--shadow-soft);
-      border: 1px solid rgba(15, 118, 110, 0.12);
-      position: relative;
-      overflow: hidden;
-      flex: 0 0 auto;
-    }
-    .brand-mark::before,
-    .brand-mark::after {
-      content: "";
-      position: absolute;
-      inset: auto;
-      border-radius: 999px;
-    }
-    .brand-mark::before {
-      width: 38px;
-      height: 10px;
-      background: linear-gradient(90deg, transparent 0, transparent 20%, rgba(18, 131, 143, 0.95) 20%, rgba(18, 131, 143, 0.95) 80%, transparent 80%);
-      transform: rotate(90deg);
-    }
-    .brand-mark::after {
-      width: 38px;
-      height: 10px;
-      background: linear-gradient(90deg, transparent 0, transparent 20%, rgba(18, 131, 143, 0.95) 20%, rgba(18, 131, 143, 0.95) 80%, transparent 80%);
-    }
+    .brand-mark { display:block; width:64px; height:64px; flex:0 0 auto; object-fit:contain; border-radius:14px; background:#fff; box-shadow:var(--shadow-soft); }
     .brand-copy strong {
       display: block;
       font-family: var(--serif);
@@ -1226,11 +1224,7 @@ function schedule_display_label(array $schedule): string
     }
     .shell { --max: 1200px; }
     .topbar { padding-top: 22px; padding-bottom: 12px; }
-    .brand-mark {
-      border-radius: 17px;
-      background: linear-gradient(145deg, #ffffff, #e5f3ef);
-      box-shadow: 0 8px 18px rgba(8, 127, 115, 0.12);
-    }
+    .brand-mark { border-radius:14px; box-shadow:0 8px 18px rgba(8,127,115,.12); }
     .brand-copy strong { color: #173238; }
     .pill {
       background: rgba(255, 255, 255, 0.9);
@@ -1346,7 +1340,7 @@ function schedule_display_label(array $schedule): string
       .shell { width: min(100% - 24px, var(--max)); }
       .topbar { padding-top: 14px; }
       .brand { gap: 10px; }
-      .brand-mark { width: 46px; height: 46px; }
+      .brand-mark { width: 48px; height: 48px; }
       .brand-copy strong { font-size: .96rem; }
       .brand-copy span { font-size: .8rem; }
       .hero { padding-top: 10px; gap: 14px; }
@@ -1372,7 +1366,7 @@ function schedule_display_label(array $schedule): string
     .portal-layout { min-height:100vh; }
     .portal-sidebar { position:fixed; inset:0 auto 0 0; z-index:30; width:272px; display:flex; flex-direction:column; padding:24px 18px 18px; color:#eaf6f2; background:linear-gradient(180deg,#153f3e,#123735); box-shadow:12px 0 34px rgba(20,52,49,.10); }
     .sidebar-brand { display:flex; align-items:center; gap:12px; padding:4px 7px 24px; color:#fff; }
-    .sidebar-brand .brand-mark { width:44px; height:44px; flex:0 0 44px; border:0; }
+    .sidebar-brand .brand-mark { width:48px; height:48px; flex:0 0 48px; border:0; }
     .sidebar-brand strong,.sidebar-brand small { display:block; }
     .sidebar-brand strong { font-size:.96rem; line-height:1.25; }
     .sidebar-brand small { margin-top:4px; color:#aac6c0; font-size:.78rem; }
@@ -1405,6 +1399,15 @@ function schedule_display_label(array $schedule): string
     .portal-content { width:min(1240px,100%); flex:1; margin:0 auto; padding:28px clamp(18px,4vw,48px) 18px; }
     .portal-content .hero { margin-top:0; }
     .portal-footer { padding:18px clamp(18px,4vw,48px) 24px; color:#738787; font-size:.82rem; }
+    .site-footer { position:relative; z-index:1; width:min(1060px,calc(100% - 32px)); margin:24px auto 20px; }
+    .portal-footer.site-footer { width:auto; margin:0; }
+    .site-disclaimer { padding:15px 17px; border:1px solid #e5d8a7; border-radius:12px; color:#554a27; background:#fff8dc; font-size:.9rem; line-height:1.65; }
+    .site-disclaimer strong { color:#3f361c; }
+    .site-footer-links { display:flex; flex-wrap:wrap; justify-content:center; gap:10px 18px; padding:15px 8px 7px; border-top:1px solid rgba(25,73,68,.12); margin-top:16px; }
+    .site-footer-links a { color:#315b55; font-weight:700; }
+    .site-footer-links a:hover { color:#087f73; text-decoration:underline; text-underline-offset:3px; }
+    .site-copyright { color:#647a7c; text-align:center; font-size:.82rem; }
+    @media (max-width:1080px) { .portal-footer.site-footer { margin:0 16px; } }
     .quick-links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:0 0 28px; }
     .quick-link { display:flex; align-items:center; gap:13px; min-height:88px; padding:17px; border:1px solid rgba(25,73,68,.10); border-radius:18px; background:#fff; box-shadow:var(--shadow-soft); transition:transform .18s ease,box-shadow .18s ease; }
     .quick-link:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
@@ -1449,13 +1452,13 @@ function schedule_display_label(array $schedule): string
   <div class="glow one"></div>
   <div class="glow two"></div>
 
-<?php if (!is_logged_in() && in_array($page, ['login', 'register', 'terms'], true)): ?>
+<?php if (!is_logged_in() && in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright'], true)): ?>
   <main class="auth-grid">
     <section class="auth-card reveal">
       <div class="auth-intro">
         <div>
           <div class="brand" style="margin-bottom: 22px;">
-            <div class="brand-mark" aria-hidden="true"></div>
+            <img class="brand-mark" src="assets/balangan-health-center-logo.png" alt="Balangan Health Center logo">
             <div class="brand-copy">
               <strong>Barangay Balagan Health Center</strong>
               <span>Online Appointment System</span>
@@ -1467,15 +1470,8 @@ function schedule_display_label(array $schedule): string
       </div>
       <div class="auth-panel">
         <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?>"><?php echo e($message); ?></div><?php endif; ?>
-        <?php if ($page === 'terms'): ?>
-          <h2>Terms &amp; Conditions</h2>
-          <div class="terms-copy">
-            <p>This portal lets residents send appointment requests to Barangay Balagan Health Center. Sending a request does not confirm a visit; wait for the health center to review it and check its status in My Appointments.</p>
-            <p>Provide accurate contact and patient information so clinic staff can process your request. Use the portal only for health center appointment services.</p>
-            <p>This portal is not an emergency service. For urgent medical help, contact local emergency services or go to the nearest health facility.</p>
-            <p>Information you submit is displayed to authorized health center staff for appointment handling. Keep your account password private and log out on shared devices.</p>
-          </div>
-          <p class="muted"><a href="index.php?page=login"><strong>Back to login</strong></a></p>
+        <?php if (isset($legalPages[$page])): ?>
+          <?php render_legal_page($legalPages[$page], 'index.php?page=login', 'Back to login'); ?>
         <?php elseif ($page === 'register'): ?>
           <h2>Create Account</h2>
           <form method="post" class="form-grid">
@@ -1510,10 +1506,13 @@ function schedule_display_label(array $schedule): string
       </div>
     </section>
   </main>
+    <footer class="site-footer auth-footer"><div class="site-disclaimer"><strong>Disclaimer:</strong> This website is created for demonstration and academic purposes only as part of an SIA subject project. It is not a real company, official service, registered business, or commercial website. No claims are made regarding actual business operations, legal standing, or real-world services.</div>
+      <nav class="site-footer-links" aria-label="Legal information"><a href="index.php?page=privacy">Privacy Policy</a><a href="index.php?page=terms">Terms</a><a href="index.php?page=moderation">Moderation</a><a href="index.php?page=copyright">Copyright</a></nav>
+      <div class="site-copyright">© 2026 Barangay Balagan Health Center</div></footer>
 <?php else: ?>
 <div class="portal-layout" id="portalLayout">
   <aside class="portal-sidebar" id="portalSidebar" aria-label="Resident navigation">
-    <a class="sidebar-brand" href="index.php?page=dashboard"><span class="brand-mark" aria-hidden="true"></span><span><strong>Balagan Health Center</strong><small>Resident portal</small></span></a>
+    <a class="sidebar-brand" href="index.php?page=dashboard"><img class="brand-mark" src="assets/balangan-health-center-logo.png" alt=""><span><strong>Balagan Health Center</strong><small>Resident portal</small></span></a>
     <div class="sidebar-account"><span class="account-avatar" aria-hidden="true"><?php echo e(strtoupper(substr(user_display_name(current_user() ?? []), 0, 1))); ?></span><span><small>Signed in as</small><strong><?php echo e(user_display_name(current_user() ?? [])); ?></strong></span></div>
     <nav class="sidebar-nav" aria-label="Main menu">
       <span class="sidebar-label">MENU</span>
@@ -1536,7 +1535,9 @@ function schedule_display_label(array $schedule): string
     </header>
     <main class="portal-content">
       <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?> reveal is-visible"><?php echo e($message); ?></div><?php endif; ?>
-      <?php if ($page === 'profile'): ?>
+      <?php if (isset($legalPages[$page])): ?>
+        <section class="section reveal is-visible" style="padding-top:18px;"><div class="panel terms-copy"><?php render_legal_page($legalPages[$page], 'index.php?page=dashboard', 'Back to dashboard'); ?></div></section>
+      <?php elseif ($page === 'profile'): ?>
       <section class="section reveal is-visible" style="padding-top: 18px;">
         <div class="section-head">
           <div>
@@ -1777,7 +1778,9 @@ function schedule_display_label(array $schedule): string
         </section>
       <?php endif; ?>
     </main>
-    <footer class="portal-footer">Barangay Balagan Health Center <span>·</span> Online appointment portal</footer>
+    <footer class="portal-footer site-footer"><div class="site-disclaimer"><strong>Disclaimer:</strong> This website is created for demonstration and academic purposes only as part of an SIA subject project. It is not a real company, official service, registered business, or commercial website. No claims are made regarding actual business operations, legal standing, or real-world services.</div>
+      <nav class="site-footer-links" aria-label="Legal information"><a href="index.php?page=privacy">Privacy Policy</a><a href="index.php?page=terms">Terms</a><a href="index.php?page=moderation">Moderation</a><a href="index.php?page=copyright">Copyright</a></nav>
+      <div class="site-copyright">© 2026 Barangay Balagan Health Center</div></footer>
   </div>
 </div>
 
