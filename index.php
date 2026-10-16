@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+// Clinic information shown to visitors is demonstration data; verify official details before real-world use.
+
 require __DIR__ . '/db.php';
 
 $pdo = db();
