@@ -75,6 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'login') {
+        if (($_POST['terms_accepted'] ?? '') !== '1') {
+            flash_to_page('login', 'Please agree to the Terms and Conditions before logging in.', 'error');
+        }
+
         $identity = post_string('identity');
         $password = (string) ($_POST['password'] ?? '');
         $stmt = $pdo->prepare('SELECT * FROM users WHERE username = :username OR email = :email LIMIT 1');
@@ -112,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              WHERE a.id = :id AND a.user_id = :user_id AND a.status IN ('pending', 'confirmed') AND sc.schedule_date > CURDATE()"
         );
         $stmt->execute([':id' => $appointmentId, ':user_id' => $user['id']]);
-        flash_to_page('dashboard', $stmt->rowCount() ? 'Appointment cancelled. Choose another schedule to rebook.' : 'This appointment can no longer be cancelled.', $stmt->rowCount() ? 'success' : 'error');
+        flash_to_page('appointments', $stmt->rowCount() ? 'Appointment cancelled. Choose another schedule to rebook.' : 'This appointment can no longer be cancelled.', $stmt->rowCount() ? 'success' : 'error');
     }
 
     if ($action === 'update_profile') {
@@ -168,11 +172,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $schedule = $scheduleStmt->fetch();
 
         if (!$schedule) {
-            flash_to_page('dashboard', 'Selected schedule is not available.', 'error');
+            flash_to_page('schedule', 'Selected schedule is not available.', 'error');
         }
 
         if (appointment_count($pdo, $scheduleId) >= (int) $schedule['slot_limit']) {
-            flash_to_page('dashboard', 'Selected schedule is already full.', 'error');
+            flash_to_page('schedule', 'Selected schedule is already full.', 'error');
         }
 
         $user = current_user();
@@ -223,7 +227,7 @@ if (is_logged_in() && is_admin()) {
     redirect_to('admin.php?page=dashboard');
 }
 
-if (!is_logged_in() && !in_array($page, ['login', 'register'], true)) {
+if (!is_logged_in() && !in_array($page, ['login', 'register', 'terms'], true)) {
     redirect_to('index.php?page=login');
 }
 
@@ -1364,13 +1368,88 @@ function schedule_display_label(array $schedule): string
       .queue-item { grid-template-columns: 1fr; }
       .tag { justify-self: start; }
     }
+
+    .portal-layout { min-height:100vh; }
+    .portal-sidebar { position:fixed; inset:0 auto 0 0; z-index:30; width:272px; display:flex; flex-direction:column; padding:24px 18px 18px; color:#eaf6f2; background:linear-gradient(180deg,#153f3e,#123735); box-shadow:12px 0 34px rgba(20,52,49,.10); }
+    .sidebar-brand { display:flex; align-items:center; gap:12px; padding:4px 7px 24px; color:#fff; }
+    .sidebar-brand .brand-mark { width:44px; height:44px; flex:0 0 44px; border:0; }
+    .sidebar-brand strong,.sidebar-brand small { display:block; }
+    .sidebar-brand strong { font-size:.96rem; line-height:1.25; }
+    .sidebar-brand small { margin-top:4px; color:#aac6c0; font-size:.78rem; }
+    .sidebar-account { display:flex; align-items:center; gap:11px; padding:16px 10px; border-block:1px solid rgba(255,255,255,.12); }
+    .account-avatar,.topbar-avatar { display:grid; place-items:center; flex:0 0 auto; border-radius:50%; font-weight:800; }
+    .account-avatar { width:38px; height:38px; color:#124e48; background:#c9e8dd; }
+    .sidebar-account small,.sidebar-account strong { display:block; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sidebar-account small { margin-bottom:3px; color:#a9c2bc; font-size:.73rem; }
+    .sidebar-account strong { color:#fff; font-size:.88rem; }
+    .sidebar-nav { display:grid; gap:5px; padding-top:25px; }
+    .sidebar-label { padding:0 12px 7px; color:#91b1aa; font-size:.68rem; font-weight:800; letter-spacing:.12em; }
+    .sidebar-nav a,.sidebar-logout button { display:flex; align-items:center; gap:12px; width:100%; padding:12px; border:0; border-radius:11px; color:#c1d6d1; background:transparent; text-align:left; font-weight:650; transition:background .16s ease,color .16s ease; }
+    .sidebar-nav a:hover,.sidebar-logout button:hover { color:#fff; background:rgba(255,255,255,.08); }
+    .sidebar-nav a.active { color:#fff; background:#087f73; box-shadow:0 8px 20px rgba(0,0,0,.12); }
+    .nav-icon { display:inline-grid; place-items:center; width:22px; height:22px; font-size:1.14rem; }
+    .sidebar-bottom { margin-top:auto; }
+    .sidebar-help { display:grid; gap:6px; padding:14px; border:1px solid rgba(255,255,255,.10); border-radius:13px; background:rgba(255,255,255,.055); }
+    .sidebar-help strong { color:#f4faf8; font-size:.82rem; }
+    .sidebar-help span { color:#afc6c0; font-size:.76rem; line-height:1.5; }
+    .sidebar-logout { margin-top:12px; }
+    .sidebar-logout button { cursor:pointer; font:inherit; }
+    .portal-main { min-height:100vh; margin-left:272px; display:flex; flex-direction:column; }
+    .portal-topbar { position:sticky; top:0; z-index:15; display:flex; align-items:center; gap:15px; min-height:78px; padding:12px clamp(18px,4vw,48px); border-bottom:1px solid rgba(25,73,68,.08); background:rgba(248,251,249,.91); backdrop-filter:blur(16px); }
+    .topbar-page { display:grid; gap:2px; }
+    .topbar-page span { color:#6b8181; font-size:.78rem; }
+    .topbar-page strong { color:#173238; font-size:1.05rem; }
+    .topbar-profile { display:flex; align-items:center; gap:9px; margin-left:auto; color:#355255; font-size:.88rem; font-weight:700; }
+    .topbar-avatar { width:36px; height:36px; color:#17645d; background:#dcefe9; }
+    .menu-toggle { display:none; }
+    .portal-content { width:min(1240px,100%); flex:1; margin:0 auto; padding:28px clamp(18px,4vw,48px) 18px; }
+    .portal-content .hero { margin-top:0; }
+    .portal-footer { padding:18px clamp(18px,4vw,48px) 24px; color:#738787; font-size:.82rem; }
+    .quick-links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:0 0 28px; }
+    .quick-link { display:flex; align-items:center; gap:13px; min-height:88px; padding:17px; border:1px solid rgba(25,73,68,.10); border-radius:18px; background:#fff; box-shadow:var(--shadow-soft); transition:transform .18s ease,box-shadow .18s ease; }
+    .quick-link:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+    .quick-link-icon { display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:13px; color:#087f73; background:#e9f5f0; font-size:1.35rem; }
+    .quick-link strong,.quick-link small { display:block; }
+    .quick-link strong { color:#173238; font-size:.92rem; }
+    .quick-link small { margin-top:4px; color:#6b8181; font-size:.78rem; line-height:1.4; }
+    .quick-arrow { margin-left:auto; color:#087f73; font-size:1.2rem; }
+    .page-intro { margin:0 0 20px; }
+    .page-intro h1 { max-width:none; margin:10px 0 6px; color:#173238; font:700 clamp(1.8rem,3vw,2.5rem)/1.12 var(--sans); letter-spacing:-.035em; }
+    .page-intro p { margin:0; color:#647a7c; }
+    .portal-content .schedule-page { margin-top:0; }
+    .portal-content .schedule-page > .card { grid-column:1/-1; }
+    .terms-check { display:flex; flex-direction:row; align-items:flex-start; gap:10px; padding:4px 0 2px; }
+    .terms-check input { width:18px; height:18px; flex:0 0 18px; margin:2px 0 0; accent-color:#087f73; }
+    .terms-check label { color:#536b6c; font-size:.88rem; font-weight:500; line-height:1.5; }
+    .terms-check a { color:#087f73; font-weight:750; text-decoration:underline; text-underline-offset:2px; }
+    .terms-copy { color:#425d5f; line-height:1.7; }
+    .terms-copy p { margin:.2rem 0 1rem; }
+    .sidebar-backdrop { display:none; }
+    @media (max-width:1080px) {
+      .portal-content .hero { grid-template-columns:1.1fr .9fr; }
+      .portal-content .hero-stats,.portal-content .availability { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width:760px) {
+      .portal-sidebar { width:min(290px,86vw); transform:translateX(-105%); transition:transform .22s ease; }
+      .portal-layout.sidebar-open .portal-sidebar { transform:translateX(0); }
+      .portal-main { margin-left:0; }
+      .portal-topbar { min-height:68px; padding:10px 16px; }
+      .menu-toggle { display:grid; gap:4px; width:40px; height:40px; padding:10px; border:1px solid rgba(25,73,68,.12); border-radius:11px; background:#fff; cursor:pointer; }
+      .menu-toggle span { display:block; width:18px; height:2px; border-radius:2px; background:#17645d; }
+      .portal-layout.sidebar-open .sidebar-backdrop { display:block; position:fixed; inset:0; z-index:25; width:100%; border:0; background:rgba(13,34,34,.42); }
+      .portal-content { padding:20px 16px 12px; }
+      .portal-content .hero { grid-template-columns:1fr; }
+      .quick-links { grid-template-columns:1fr; gap:10px; }
+      .topbar-profile > span:last-child { display:none; }
+    }
+    @media (prefers-reduced-motion:reduce) { .portal-sidebar,.quick-link { transition:none; } }
 </style>
 </head>
 <body>
   <div class="glow one"></div>
   <div class="glow two"></div>
 
-<?php if (!is_logged_in() && in_array($page, ['login', 'register'], true)): ?>
+<?php if (!is_logged_in() && in_array($page, ['login', 'register', 'terms'], true)): ?>
   <main class="auth-grid">
     <section class="auth-card reveal">
       <div class="auth-intro">
@@ -1388,7 +1467,16 @@ function schedule_display_label(array $schedule): string
       </div>
       <div class="auth-panel">
         <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?>"><?php echo e($message); ?></div><?php endif; ?>
-        <?php if ($page === 'register'): ?>
+        <?php if ($page === 'terms'): ?>
+          <h2>Terms &amp; Conditions</h2>
+          <div class="terms-copy">
+            <p>This portal lets residents send appointment requests to Barangay Balagan Health Center. Sending a request does not confirm a visit; wait for the health center to review it and check its status in My Appointments.</p>
+            <p>Provide accurate contact and patient information so clinic staff can process your request. Use the portal only for health center appointment services.</p>
+            <p>This portal is not an emergency service. For urgent medical help, contact local emergency services or go to the nearest health facility.</p>
+            <p>Information you submit is displayed to authorized health center staff for appointment handling. Keep your account password private and log out on shared devices.</p>
+          </div>
+          <p class="muted"><a href="index.php?page=login"><strong>Back to login</strong></a></p>
+        <?php elseif ($page === 'register'): ?>
           <h2>Create Account</h2>
           <form method="post" class="form-grid">
             <input type="hidden" name="action" value="register">
@@ -1409,8 +1497,12 @@ function schedule_display_label(array $schedule): string
           <h2>Log In</h2>
           <form method="post" class="form-grid">
             <input type="hidden" name="action" value="login">
-            <div class="field full"><label>Username or email</label><input name="identity" required autofocus></div>
-            <div class="field full"><label>Password</label><input name="password" type="password" required></div>
+            <div class="field full"><label>Username or email</label><input name="identity" autocomplete="username" required autofocus></div>
+            <div class="field full"><label>Password</label><input name="password" type="password" autocomplete="current-password" required></div>
+            <div class="field full terms-check">
+              <input id="terms-accepted" name="terms_accepted" value="1" type="checkbox" required>
+              <label for="terms-accepted">I agree to the <a href="index.php?page=terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>.</label>
+            </div>
             <div class="field full"><button class="btn btn-primary" type="submit">Log in</button></div>
           </form>
           <p class="muted">No account yet? <a href="index.php?page=register"><strong>Create one here</strong></a>.</p>
@@ -1419,34 +1511,32 @@ function schedule_display_label(array $schedule): string
     </section>
   </main>
 <?php else: ?>
-  <header>
-    <div class="shell topbar">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true"></div>
-        <div class="brand-copy">
-          <strong>Barangay Balagan Health Center</strong>
-          <span>Patient portal</span>
-        </div>
-      </div>
-      <div class="header-actions">
-        <span class="pill">Logged in as <strong><?php echo e(user_display_name(current_user() ?? [])); ?></strong></span>
-        <nav class="header-actions">
-          <a class="pill" href="index.php?page=dashboard">Dashboard</a>
-          <a class="pill" href="index.php?page=profile">My Profile</a>
-          <a class="pill" href="#appointments">My Appointments</a>
-          <form method="post" style="margin:0;">
-            <input type="hidden" name="action" value="logout">
-            <button class="btn btn-secondary" type="submit">Log out</button>
-          </form>
-        </nav>
-      </div>
+<div class="portal-layout" id="portalLayout">
+  <aside class="portal-sidebar" id="portalSidebar" aria-label="Resident navigation">
+    <a class="sidebar-brand" href="index.php?page=dashboard"><span class="brand-mark" aria-hidden="true"></span><span><strong>Balagan Health Center</strong><small>Resident portal</small></span></a>
+    <div class="sidebar-account"><span class="account-avatar" aria-hidden="true"><?php echo e(strtoupper(substr(user_display_name(current_user() ?? []), 0, 1))); ?></span><span><small>Signed in as</small><strong><?php echo e(user_display_name(current_user() ?? [])); ?></strong></span></div>
+    <nav class="sidebar-nav" aria-label="Main menu">
+      <span class="sidebar-label">MENU</span>
+      <a class="<?php echo $page === 'dashboard' ? 'active' : ''; ?>" href="index.php?page=dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>Dashboard</a>
+      <a class="<?php echo $page === 'profile' ? 'active' : ''; ?>" href="index.php?page=profile"><span class="nav-icon" aria-hidden="true">◉</span>My Profile</a>
+      <a class="<?php echo $page === 'appointments' ? 'active' : ''; ?>" href="index.php?page=appointments"><span class="nav-icon" aria-hidden="true">✓</span>My Appointments</a>
+      <a class="<?php echo $page === 'schedule' ? 'active' : ''; ?>" href="index.php?page=schedule"><span class="nav-icon" aria-hidden="true">＋</span>Appointment Schedule</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-help"><strong>Need to book a visit?</strong><span>Choose an open clinic schedule to send a request.</span></div>
+      <form method="post" class="sidebar-logout"><input type="hidden" name="action" value="logout"><button type="submit"><span class="nav-icon" aria-hidden="true">↪</span>Log out</button></form>
     </div>
-  </header>
-
-  <main class="shell">
-    <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?> reveal is-visible"><?php echo e($message); ?></div><?php endif; ?>
-
-    <?php if ($page === 'profile'): ?>
+  </aside>
+  <button type="button" class="sidebar-backdrop" id="sidebarBackdrop" aria-label="Close navigation"></button>
+  <div class="portal-main">
+    <header class="portal-topbar">
+      <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open navigation" aria-expanded="false" aria-controls="portalSidebar"><span></span><span></span><span></span></button>
+      <div class="topbar-page"><span>Barangay Balagan Health Center</span><strong><?php echo e(['dashboard' => 'Dashboard', 'profile' => 'My Profile', 'appointments' => 'My Appointments', 'schedule' => 'Appointment Schedule'][$page] ?? 'Resident Portal'); ?></strong></div>
+      <a class="topbar-profile" href="index.php?page=profile"><span class="topbar-avatar" aria-hidden="true"><?php echo e(strtoupper(substr(user_display_name(current_user() ?? []), 0, 1))); ?></span><span><?php echo e(user_display_name(current_user() ?? [])); ?></span></a>
+    </header>
+    <main class="portal-content">
+      <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?> reveal is-visible"><?php echo e($message); ?></div><?php endif; ?>
+      <?php if ($page === 'profile'): ?>
       <section class="section reveal is-visible" style="padding-top: 18px;">
         <div class="section-head">
           <div>
@@ -1483,50 +1573,81 @@ function schedule_display_label(array $schedule): string
         </div>
       </section>
     <?php else: ?>
-      <section class="hero">
-        <div class="hero-left reveal is-visible">
-          <div class="eyebrow">Resident dashboard</div>
-          <h1>Book your health center appointment with less friction.</h1>
-          <div class="cta-row">
-            <a class="btn btn-primary" href="#book">Request appointment</a>
-            <a class="btn btn-secondary" href="#appointments">View my appointments</a>
+      <?php elseif ($page === 'appointments'): ?>
+      <section class="section" id="appointments">
+        <div class="section-head">
+          <div>
+            <h2>My Appointments</h2>
           </div>
-          <div class="hero-stats">
-            <div class="stat"><span>Open schedules</span><strong data-count="<?php echo $stats['open_schedules']; ?>"><?php echo $stats['open_schedules']; ?></strong></div>
-            <div class="stat"><span>Pending</span><strong data-count="<?php echo $stats['pending']; ?>"><?php echo $stats['pending']; ?></strong></div>
-            <div class="stat"><span>Confirmed</span><strong data-count="<?php echo $stats['confirmed']; ?>"><?php echo $stats['confirmed']; ?></strong></div>
-            <div class="stat"><span>Completed</span><strong data-count="<?php echo $stats['completed']; ?>"><?php echo $stats['completed']; ?></strong></div>
-          </div>
+          <span class="pill"><?php echo $myAppointmentsPage['total']; ?> records</span>
         </div>
-        <aside class="hero-right reveal is-visible">
-          <div class="panel-head">
-            <div>
-              <h2>Today's overview</h2>
-            </div>
-            <span class="status-badge">Live portal</span>
+        <?php if ($notifications): ?>
+          <div class="alert"><strong>Updates:</strong> <?php echo e($notifications[0]['message']); ?></div>
+        <?php endif; ?>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Patient Profile</th>
+                <th>Schedule</th>
+                <th>Concern</th>
+                <th>Status</th>
+                <th>Remarks</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($myAppointmentsPage['items'] as $appointment): ?>
+                <tr>
+                  <td>
+                    <strong><?php echo e($appointment['appointment_code']); ?></strong>
+                    <?php echo e(format_date($appointment['created_at'])); ?>
+                  </td>
+                  <td>
+                    <strong><?php echo e($appointment['full_name']); ?></strong>
+                    Age: <?php echo age_from_birthdate((string) $appointment['birthdate']); ?> | <?php echo e($appointment['gender']); ?><br>
+                    Birthdate: <?php echo e(format_date($appointment['birthdate'])); ?><br>
+                    Phone: <?php echo e($appointment['cellphone']); ?><br>
+                    Address: <?php echo e($appointment['address']); ?><br>
+                    Guardian: <?php echo e($appointment['guardian_name'] ?: 'N/A'); ?>
+                  </td>
+                  <td>
+                    <strong><?php echo e($appointment['service_name']); ?></strong>
+                    <?php echo e(format_date($appointment['schedule_date'])); ?><br>
+                    <?php echo e(format_time($appointment['start_time'])); ?> - <?php echo e(format_time($appointment['end_time'])); ?><br>
+                    <?php echo e($appointment['provider_name']); ?>, <?php echo e($appointment['provider_role']); ?>
+                  </td>
+                  <td><?php echo e($appointment['concern'] ?: 'N/A'); ?></td>
+                  <td><span class="tag <?php echo e($appointment['status']); ?>"><?php echo e($statusLabels[$appointment['status']] ?? $appointment['status']); ?></span></td>
+                  <td><?php echo e($appointment['remarks'] ?: 'No remarks yet.'); ?></td>
+                  <td>
+                    <a class="tiny-btn" target="_blank" href="index.php?page=slip&id=<?php echo (int) $appointment['id']; ?>">Print</a>
+                    <?php if (in_array($appointment['status'], ['pending', 'confirmed'], true) && $appointment['schedule_date'] > date('Y-m-d')): ?>
+                      <form method="post" style="margin-top:8px;" onsubmit="return confirm('Cancel this appointment?');">
+                        <input type="hidden" name="action" value="cancel_appointment">
+                        <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                        <button class="tiny-btn" type="submit">Cancel / Rebook</button>
+                      </form>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+              <?php if (!$myAppointmentsPage['items']): ?>
+                <tr><td colspan="7" class="empty">No appointment requests yet.</td></tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+        <?php if ($myAppointmentsPage['pages'] > 1): ?>
+          <div class="pagination">
+            <?php render_pagination_links('index.php', ['page' => 'appointments'], 'my_page', $myAppointmentsPage, '#appointments'); ?>
           </div>
-          <div class="availability">
-            <div class="availability-card">
-              <span>Available services</span>
-              <strong><?php echo count($services); ?></strong>
-            </div>
-            <div class="availability-card">
-              <span>Your appointments</span>
-              <strong><?php echo count($userAppointments); ?></strong>
-            </div>
-            <div class="availability-card">
-              <span>Next booking</span>
-              <strong><?php echo $bookableSchedules ? format_date($bookableSchedules[0]['schedule_date']) : 'None'; ?></strong>
-            </div>
-            <div class="availability-card">
-              <span>Most active</span>
-              <strong><?php echo $bookableSchedules ? e($bookableSchedules[0]['service_name']) : 'No open slot'; ?></strong>
-            </div>
-          </div>
-        </aside>
+        <?php endif; ?>
       </section>
-
-      <section class="section dashboard">
+      <?php elseif ($page === 'schedule'): ?>
+        <section class="page-intro"><span class="eyebrow">Book a clinic visit</span><h1>Appointment Schedule</h1><p>Choose an available schedule and send your appointment request.</p></section>
+      <section class="section schedule-page">
         <div class="card reveal">
           <div class="section-head">
             <div>
@@ -1608,84 +1729,59 @@ function schedule_display_label(array $schedule): string
           <?php endif; ?>
         </div>
       </section>
-
-      <section class="section" id="appointments">
-        <div class="section-head">
-          <div>
-            <h2>My Appointments</h2>
+      <?php else: ?>
+      <section class="hero">
+        <div class="hero-left reveal is-visible">
+          <div class="eyebrow">Resident dashboard</div>
+          <h1>Book your health center appointment with less friction.</h1>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#book">Request appointment</a>
+            <a class="btn btn-secondary" href="#appointments">View my appointments</a>
           </div>
-          <span class="pill"><?php echo $myAppointmentsPage['total']; ?> records</span>
-        </div>
-        <?php if ($notifications): ?>
-          <div class="alert"><strong>Updates:</strong> <?php echo e($notifications[0]['message']); ?></div>
-        <?php endif; ?>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Patient Profile</th>
-                <th>Schedule</th>
-                <th>Concern</th>
-                <th>Status</th>
-                <th>Remarks</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($myAppointmentsPage['items'] as $appointment): ?>
-                <tr>
-                  <td>
-                    <strong><?php echo e($appointment['appointment_code']); ?></strong>
-                    <?php echo e(format_date($appointment['created_at'])); ?>
-                  </td>
-                  <td>
-                    <strong><?php echo e($appointment['full_name']); ?></strong>
-                    Age: <?php echo age_from_birthdate((string) $appointment['birthdate']); ?> | <?php echo e($appointment['gender']); ?><br>
-                    Birthdate: <?php echo e(format_date($appointment['birthdate'])); ?><br>
-                    Phone: <?php echo e($appointment['cellphone']); ?><br>
-                    Address: <?php echo e($appointment['address']); ?><br>
-                    Guardian: <?php echo e($appointment['guardian_name'] ?: 'N/A'); ?>
-                  </td>
-                  <td>
-                    <strong><?php echo e($appointment['service_name']); ?></strong>
-                    <?php echo e(format_date($appointment['schedule_date'])); ?><br>
-                    <?php echo e(format_time($appointment['start_time'])); ?> - <?php echo e(format_time($appointment['end_time'])); ?><br>
-                    <?php echo e($appointment['provider_name']); ?>, <?php echo e($appointment['provider_role']); ?>
-                  </td>
-                  <td><?php echo e($appointment['concern'] ?: 'N/A'); ?></td>
-                  <td><span class="tag <?php echo e($appointment['status']); ?>"><?php echo e($statusLabels[$appointment['status']] ?? $appointment['status']); ?></span></td>
-                  <td><?php echo e($appointment['remarks'] ?: 'No remarks yet.'); ?></td>
-                  <td>
-                    <a class="tiny-btn" target="_blank" href="index.php?page=slip&id=<?php echo (int) $appointment['id']; ?>">Print</a>
-                    <?php if (in_array($appointment['status'], ['pending', 'confirmed'], true) && $appointment['schedule_date'] > date('Y-m-d')): ?>
-                      <form method="post" style="margin-top:8px;" onsubmit="return confirm('Cancel this appointment?');">
-                        <input type="hidden" name="action" value="cancel_appointment">
-                        <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
-                        <button class="tiny-btn" type="submit">Cancel / Rebook</button>
-                      </form>
-                    <?php endif; ?>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-              <?php if (!$myAppointmentsPage['items']): ?>
-                <tr><td colspan="7" class="empty">No appointment requests yet.</td></tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-        <?php if ($myAppointmentsPage['pages'] > 1): ?>
-          <div class="pagination">
-            <?php render_pagination_links('index.php', ['page' => 'dashboard'], 'my_page', $myAppointmentsPage, '#appointments'); ?>
+          <div class="hero-stats">
+            <div class="stat"><span>Open schedules</span><strong data-count="<?php echo $stats['open_schedules']; ?>"><?php echo $stats['open_schedules']; ?></strong></div>
+            <div class="stat"><span>Pending</span><strong data-count="<?php echo $stats['pending']; ?>"><?php echo $stats['pending']; ?></strong></div>
+            <div class="stat"><span>Confirmed</span><strong data-count="<?php echo $stats['confirmed']; ?>"><?php echo $stats['confirmed']; ?></strong></div>
+            <div class="stat"><span>Completed</span><strong data-count="<?php echo $stats['completed']; ?>"><?php echo $stats['completed']; ?></strong></div>
           </div>
-        <?php endif; ?>
+        </div>
+        <aside class="hero-right reveal is-visible">
+          <div class="panel-head">
+            <div>
+              <h2>Today's overview</h2>
+            </div>
+            <span class="status-badge">Live portal</span>
+          </div>
+          <div class="availability">
+            <div class="availability-card">
+              <span>Available services</span>
+              <strong><?php echo count($services); ?></strong>
+            </div>
+            <div class="availability-card">
+              <span>Your appointments</span>
+              <strong><?php echo count($userAppointments); ?></strong>
+            </div>
+            <div class="availability-card">
+              <span>Next booking</span>
+              <strong><?php echo $bookableSchedules ? format_date($bookableSchedules[0]['schedule_date']) : 'None'; ?></strong>
+            </div>
+            <div class="availability-card">
+              <span>Most active</span>
+              <strong><?php echo $bookableSchedules ? e($bookableSchedules[0]['service_name']) : 'No open slot'; ?></strong>
+            </div>
+          </div>
+        </aside>
       </section>
-    <?php endif; ?>
-  </main>
+        <section class="quick-links" aria-label="Quick actions">
+          <a class="quick-link" href="index.php?page=schedule"><span class="quick-link-icon">＋</span><span><strong>Request an appointment</strong><small>Browse open schedules and choose a time.</small></span><span class="quick-arrow">→</span></a>
+          <a class="quick-link" href="index.php?page=appointments"><span class="quick-link-icon">✓</span><span><strong>View my appointments</strong><small>Check request status, details, and remarks.</small></span><span class="quick-arrow">→</span></a>
+        </section>
+      <?php endif; ?>
+    </main>
+    <footer class="portal-footer">Barangay Balagan Health Center <span>·</span> Online appointment portal</footer>
+  </div>
+</div>
 
-  <footer>
-    <div class="shell">Barangay Balagan Health Center online appointment scheduling system</div>
-  </footer>
 <?php endif; ?>
 
 <script>
