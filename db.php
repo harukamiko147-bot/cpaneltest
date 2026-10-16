@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$sessionDir = __DIR__ . '/sessions';
+$sessionDir = dirname(__DIR__) . '/sessions';
 if (!is_dir($sessionDir)) {
     mkdir($sessionDir, 0775, true);
 }
@@ -10,11 +10,13 @@ session_start();
 
 function app_config(): array
 {
-    $deploymentConfigPath = __DIR__ . '/config.local.php';
-    if (is_file($deploymentConfigPath)) {
-        $deploymentConfig = require $deploymentConfigPath;
-        if (is_array($deploymentConfig)) {
-            return $deploymentConfig;
+    // On cPanel, keep database credentials one directory above public_html.
+    foreach ([dirname(__DIR__) . '/config.local.php', __DIR__ . '/config.local.php'] as $deploymentConfigPath) {
+        if (is_file($deploymentConfigPath)) {
+            $deploymentConfig = require $deploymentConfigPath;
+            if (is_array($deploymentConfig)) {
+                return $deploymentConfig;
+            }
         }
     }
 
@@ -50,11 +52,7 @@ function db(): PDO
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
     } catch (PDOException $exception) {
-        throw new RuntimeException(
-            'Database connection failed. Start MySQL in XAMPP, then run setup-barangay-balagan-database.bat.',
-            0,
-            $exception
-        );
+        throw new RuntimeException('Database connection failed. Check the private deployment configuration.', 0, $exception);
     }
 
     return $pdo;
@@ -308,76 +306,6 @@ function ensure_schema_compatibility(PDO $pdo): void
 function ensure_seed_data(PDO $pdo): void
 {
     ensure_schema_compatibility($pdo);
-
-    $adminStmt = $pdo->query("SELECT COUNT(*) AS total FROM users WHERE role = 'admin'");
-    $adminCount = (int) $adminStmt->fetch()['total'];
-    if ($adminCount === 0) {
-        $stmt = $pdo->prepare(
-            'INSERT INTO users (first_name, last_name, username, email, password_hash, role, birthdate, gender, address, cellphone)
-             VALUES (:first_name, :last_name, :username, :email, :password_hash, :role, :birthdate, :gender, :address, :cellphone)'
-        );
-        $stmt->execute([
-            ':first_name' => 'System',
-            ':last_name' => 'Administrator',
-            ':username' => 'admin',
-            ':email' => 'admin@bbhc.local',
-            ':password_hash' => password_hash('Admin@12345', PASSWORD_DEFAULT),
-            ':role' => 'admin',
-            ':birthdate' => '1990-01-01',
-            ':gender' => 'Other',
-            ':address' => 'Barangay Balagan Health Center',
-            ':cellphone' => '0000000000',
-        ]);
-    }
-
-    $staffCount = (int) $pdo->query('SELECT COUNT(*) AS total FROM clinic_staff')->fetch()['total'];
-    if ($staffCount === 0) {
-        $stmt = $pdo->prepare(
-            'INSERT INTO clinic_staff (full_name, role, specialty, contact_number, availability, status, notes)
-             VALUES (:full_name, :role, :specialty, :contact_number, :availability, :status, :notes)'
-        );
-        $defaults = [
-            [
-                'full_name' => 'Dr. Ana Santos',
-                'role' => 'Doctor',
-                'specialty' => 'General Medicine',
-                'contact_number' => '09170000001',
-                'availability' => 'Mon-Fri 8:00 AM - 4:00 PM',
-                'status' => 'active',
-                'notes' => 'Primary physician for consultation cases.',
-            ],
-            [
-                'full_name' => 'Nurse Maria Reyes',
-                'role' => 'Nurse',
-                'specialty' => 'Community Health Nursing',
-                'contact_number' => '09170000002',
-                'availability' => 'Mon-Sat 8:00 AM - 5:00 PM',
-                'status' => 'active',
-                'notes' => 'Handles general care, triage, and follow-up reminders.',
-            ],
-            [
-                'full_name' => 'Midwife Carla Dizon',
-                'role' => 'Midwife',
-                'specialty' => 'Maternal and Child Care',
-                'contact_number' => '09170000003',
-                'availability' => 'Tue-Sat 1:00 PM - 5:00 PM',
-                'status' => 'active',
-                'notes' => 'Supports prenatal, postnatal, and newborn services.',
-            ],
-        ];
-
-        foreach ($defaults as $staff) {
-            $stmt->execute([
-                ':full_name' => $staff['full_name'],
-                ':role' => $staff['role'],
-                ':specialty' => $staff['specialty'],
-                ':contact_number' => $staff['contact_number'],
-                ':availability' => $staff['availability'],
-                ':status' => $staff['status'],
-                ':notes' => $staff['notes'],
-            ]);
-        }
-    }
 }
 
 function format_date(?string $date): string
