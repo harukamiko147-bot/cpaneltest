@@ -282,7 +282,7 @@ if (is_logged_in() && is_admin()) {
     redirect_to('admin.php?page=dashboard');
 }
 
-if (!is_logged_in() && !in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright'], true)) {
+if (!is_logged_in() && !in_array($page, ['login', 'register', 'terms', 'privacy', 'moderation', 'copyright', 'clinic_info'], true)) {
     redirect_to('index.php?page=login');
 }
 
@@ -300,6 +300,19 @@ $myAppointmentsPage = [
 ];
 $profile = null;
 $notifications = [];
+$publicServices = [];
+$publicSchedules = [];
+if ($page === 'clinic_info') {
+    $publicServices = $pdo->query('SELECT name, description FROM services ORDER BY name')->fetchAll();
+    $publicSchedules = $pdo->query(
+        "SELECT sc.schedule_date, sc.start_time, sc.end_time, sv.name AS service_name
+         FROM schedules sc
+         JOIN services sv ON sv.id = sc.service_id
+         WHERE sc.status = 'open' AND sc.schedule_date >= CURDATE()
+         ORDER BY sc.schedule_date, sc.start_time
+         LIMIT 20"
+    )->fetchAll();
+}
 $stats = [
     'open_schedules' => 0,
     'pending' => 0,
@@ -1526,7 +1539,16 @@ function schedule_display_label(array $schedule): string
       </div>
       <div class="auth-panel">
         <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?>"><?php echo e($message); ?></div><?php endif; ?>
-        <?php if (isset($legalPages[$page])): ?>
+        <?php if ($page === 'clinic_info'): ?>
+          <h2>Clinic Information &amp; Services</h2>
+          <p class="muted">This page displays demonstration data from the project. It is not an official clinic notice.</p>
+          <h3>Services listed in this demo</h3>
+          <?php if ($publicServices): ?><ul><?php foreach ($publicServices as $service): ?><li><strong><?php echo e($service['name']); ?></strong><?php if ($service['description']): ?> — <?php echo e($service['description']); ?><?php endif; ?></li><?php endforeach; ?></ul><?php else: ?><p>No services have been listed.</p><?php endif; ?>
+          <h3>Posted schedules</h3>
+          <?php if ($publicSchedules): ?><ul><?php foreach ($publicSchedules as $schedule): ?><li><?php echo e(format_date($schedule['schedule_date'])); ?>, <?php echo e(format_time($schedule['start_time'])); ?>–<?php echo e(format_time($schedule['end_time'])); ?> — <?php echo e($schedule['service_name']); ?></li><?php endforeach; ?></ul><?php else: ?><p>No open schedules are posted.</p><?php endif; ?>
+          <div class="alert">Office hours, address, contact details, and real service availability have not been verified here. Confirm them through official barangay channels. This academic demo is not for emergencies or real patient information.</div>
+          <p class="muted"><a href="index.php?page=login"><strong>Back to login</strong></a></p>
+        <?php elseif (isset($legalPages[$page])): ?>
           <?php render_legal_page($legalPages[$page], 'index.php?page=login', 'Back to login'); ?>
         <?php elseif ($page === 'register'): ?>
           <h2>Create Account</h2>
@@ -1557,6 +1579,7 @@ function schedule_display_label(array $schedule): string
             </div>
             <div class="field full"><button class="btn btn-primary" type="submit">Log in</button></div>
           </form>
+          <p class="muted"><a href="index.php?page=clinic_info"><strong>View clinic information and services</strong></a></p>
           <p class="muted">No account yet? <a href="index.php?page=register"><strong>Create one here</strong></a>.</p>
         <?php endif; ?>
       </div>
@@ -1576,6 +1599,7 @@ function schedule_display_label(array $schedule): string
       <a class="<?php echo $page === 'profile' ? 'active' : ''; ?>" href="index.php?page=profile"><span class="nav-icon" aria-hidden="true">◉</span>My Profile</a>
       <a class="<?php echo $page === 'appointments' ? 'active' : ''; ?>" href="index.php?page=appointments"><span class="nav-icon" aria-hidden="true">✓</span>My Appointments</a>
       <a class="<?php echo $page === 'schedule' ? 'active' : ''; ?>" href="index.php?page=schedule"><span class="nav-icon" aria-hidden="true">＋</span>Appointment Schedule</a>
+      <a class="<?php echo $page === 'clinic_info' ? 'active' : ''; ?>" href="index.php?page=clinic_info"><span class="nav-icon" aria-hidden="true">ⓘ</span>Clinic Information</a>
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-help"><strong>Need to book a visit?</strong><span>Choose an open clinic schedule to send a request.</span></div>
@@ -1587,12 +1611,24 @@ function schedule_display_label(array $schedule): string
     <a class="skip-link" href="#mainContent">Skip to main content</a>
     <header class="portal-topbar">
       <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open navigation" aria-expanded="false" aria-controls="portalSidebar"><span></span><span></span><span></span></button>
-      <div class="topbar-page"><span>Barangay Balagan Health Center</span><strong><?php echo e(['dashboard' => 'Dashboard', 'profile' => 'My Profile', 'appointments' => 'My Appointments', 'schedule' => 'Appointment Schedule'][$page] ?? 'Resident Portal'); ?></strong></div>
+      <div class="topbar-page"><span>Barangay Balagan Health Center</span><strong><?php echo e(['dashboard' => 'Dashboard', 'profile' => 'My Profile', 'appointments' => 'My Appointments', 'schedule' => 'Appointment Schedule', 'clinic_info' => 'Clinic Information'][$page] ?? 'Resident Portal'); ?></strong></div>
       <a class="topbar-profile" href="index.php?page=profile"><span class="topbar-avatar" aria-hidden="true"><?php echo e(strtoupper(substr(user_display_name(current_user() ?? []), 0, 1))); ?></span><span><?php echo e(user_display_name(current_user() ?? [])); ?></span></a>
     </header>
     <main class="portal-content" id="mainContent">
       <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?> reveal is-visible"><?php echo e($message); ?></div><?php endif; ?>
-      <?php if (isset($legalPages[$page])): ?>
+      <?php if ($page === 'clinic_info'): ?>
+        <section class="section reveal is-visible" style="padding-top:18px;">
+          <div class="panel terms-copy">
+            <h2>Clinic Information &amp; Services</h2>
+            <p>This page displays demonstration data from the project. It is not an official clinic notice.</p>
+            <h3>Services listed in this demo</h3>
+            <?php if ($publicServices): ?><ul><?php foreach ($publicServices as $service): ?><li><strong><?php echo e($service['name']); ?></strong><?php if ($service['description']): ?> — <?php echo e($service['description']); ?><?php endif; ?></li><?php endforeach; ?></ul><?php else: ?><p>No services have been listed.</p><?php endif; ?>
+            <h3>Posted schedules</h3>
+            <?php if ($publicSchedules): ?><ul><?php foreach ($publicSchedules as $schedule): ?><li><?php echo e(format_date($schedule['schedule_date'])); ?>, <?php echo e(format_time($schedule['start_time'])); ?>–<?php echo e(format_time($schedule['end_time'])); ?> — <?php echo e($schedule['service_name']); ?></li><?php endforeach; ?></ul><?php else: ?><p>No open schedules are posted.</p><?php endif; ?>
+            <div class="alert">Office hours, address, contact details, and real service availability have not been verified here. Confirm them through official barangay channels. This academic demo is not for emergencies or real patient information.</div>
+          </div>
+        </section>
+      <?php elseif (isset($legalPages[$page])): ?>
         <section class="section reveal is-visible" style="padding-top:18px;"><div class="panel terms-copy"><?php render_legal_page($legalPages[$page], 'index.php?page=dashboard', 'Back to dashboard'); ?></div></section>
       <?php elseif ($page === 'profile'): ?>
       <section class="section reveal is-visible" style="padding-top: 18px;">
