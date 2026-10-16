@@ -155,15 +155,5 @@ INSERT INTO services (name, description) VALUES
   ('Follow-up Checkup', 'Return visit for previous health concern or medicine review.')
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
-INSERT INTO schedules (service_id, provider_name, provider_role, schedule_date, start_time, end_time, slot_limit, status, notes)
-SELECT id, 'Nurse Maria Reyes', 'Nurse', CURDATE(), '08:00:00', '12:00:00', 20, 'open', 'Morning consultation and follow-up checkup.'
-FROM services WHERE name = 'General Consultation'
-ON DUPLICATE KEY UPDATE provider_name = provider_name;
-
-INSERT INTO schedules (service_id, provider_name, provider_role, schedule_date, start_time, end_time, slot_limit, status, notes)
-SELECT id, 'Midwife Carla Dizon', 'Midwife', DATE_ADD(CURDATE(), INTERVAL 1 DAY), '13:00:00', '16:00:00', 18, 'open', 'Prenatal, newborn, and child care schedule.'
-FROM services WHERE name = 'Prenatal Checkup'
-ON DUPLICATE KEY UPDATE provider_name = provider_name;
-
--- The app seeds the default admin account and sample clinic staff on first run.
+-- Create schedules and administrator accounts only after clinic staff have approved their details.
 
