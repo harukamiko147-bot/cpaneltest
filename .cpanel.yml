@@ -1,0 +1,7 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/barahjhu/public_html/
+    - /bin/mkdir -p "$DEPLOYPATH/sessions" "$DEPLOYPATH/uploads"
+    - /bin/cp index.php admin.php db.php "$DEPLOYPATH"
+
