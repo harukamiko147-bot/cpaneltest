@@ -1572,7 +1572,6 @@ function schedule_display_label(array $schedule): string
           </form>
         </div>
       </section>
-    <?php else: ?>
       <?php elseif ($page === 'appointments'): ?>
       <section class="section" id="appointments">
         <div class="section-head">
