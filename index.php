@@ -159,67 +159,122 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($action === 'reschedule_appointment') {
+        $appointmentId = post_int('appointment_id');
+        $scheduleId = post_int('schedule_id');
+        $user = current_user();
+        try {
+            $pdo->beginTransaction();
+            $currentStmt = $pdo->prepare(
+                "SELECT a.id, a.schedule_id, a.status, sc.schedule_date
+                 FROM appointments a
+                 JOIN schedules sc ON sc.id = a.schedule_id
+                 WHERE a.id = :id AND a.user_id = :user_id
+                 FOR UPDATE"
+            );
+            $currentStmt->execute([':id' => $appointmentId, ':user_id' => $user['id']]);
+            $current = $currentStmt->fetch();
+            if (!$current || !in_array($current['status'], ['pending', 'confirmed'], true) || $current['schedule_date'] <= date('Y-m-d')) {
+                throw new RuntimeException('This appointment can no longer be rescheduled.');
+            }
+            if ((int) $current['schedule_id'] === $scheduleId) {
+                throw new RuntimeException('Choose a different schedule to reschedule.');
+            }
+
+            $targetStmt = $pdo->prepare(
+                "SELECT id, slot_limit FROM schedules
+                 WHERE id = :id AND status = 'open' AND schedule_date > CURDATE()
+                 FOR UPDATE"
+            );
+            $targetStmt->execute([':id' => $scheduleId]);
+            $target = $targetStmt->fetch();
+            if (!$target || appointment_count($pdo, $scheduleId) >= (int) $target['slot_limit']) {
+                throw new RuntimeException('That schedule is unavailable or full. Please choose another.');
+            }
+
+            $updateStmt = $pdo->prepare(
+                "UPDATE appointments
+                 SET schedule_id = :schedule_id, status = 'pending',
+                     remarks = 'Rescheduled by resident. Waiting for staff review.'
+                 WHERE id = :id AND user_id = :user_id"
+            );
+            $updateStmt->execute([':schedule_id' => $scheduleId, ':id' => $appointmentId, ':user_id' => $user['id']]);
+            $pdo->commit();
+            try { create_notification($pdo, (int) $user['id'], 'Appointment ' . $appointmentId . ' was rescheduled and is waiting for staff review.'); } catch (Throwable) { /* The appointment update is already committed. */ }
+            flash_to_page('appointments', 'Appointment rescheduled. The clinic team will review the new request.');
+        } catch (Throwable $error) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash_to_page('appointments', $error instanceof RuntimeException ? $error->getMessage() : 'Could not reschedule this appointment. Please try again.', 'error');
+        }
+    }
+
     if ($action === 'book_appointment') {
         $scheduleId = post_int('schedule_id');
-        $scheduleStmt = $pdo->prepare(
-            'SELECT sc.*, sv.name AS service_name, st.full_name AS staff_name, st.role AS staff_role
-             FROM schedules sc
-             JOIN services sv ON sv.id = sc.service_id
-             LEFT JOIN clinic_staff st ON st.id = sc.staff_id
-             WHERE sc.id = :id AND sc.status = "open" LIMIT 1'
-        );
-        $scheduleStmt->execute([':id' => $scheduleId]);
-        $schedule = $scheduleStmt->fetch();
-
-        if (!$schedule) {
-            flash_to_page('schedule', 'Selected schedule is not available.', 'error');
-        }
-
-        if (appointment_count($pdo, $scheduleId) >= (int) $schedule['slot_limit']) {
-            flash_to_page('schedule', 'Selected schedule is already full.', 'error');
-        }
-
         $user = current_user();
-        $fullName = post_string('full_name', user_display_name($user));
-        $birthdate = (string) ($_POST['birthdate'] ?? '2000-01-01');
-        $gender = (string) ($_POST['gender'] ?? 'Other');
-        $address = post_string('address');
-        $cellphone = post_string('cellphone');
-        $guardianName = post_string('guardian_name');
-        $concern = post_string('concern');
+        try {
+            $pdo->beginTransaction();
+            $scheduleStmt = $pdo->prepare(
+                "SELECT sc.*, sv.name AS service_name, st.full_name AS staff_name, st.role AS staff_role
+                 FROM schedules sc
+                 JOIN services sv ON sv.id = sc.service_id
+                 LEFT JOIN clinic_staff st ON st.id = sc.staff_id
+                 WHERE sc.id = :id AND sc.status = 'open' AND sc.schedule_date > CURDATE()
+                 FOR UPDATE"
+            );
+            $scheduleStmt->execute([':id' => $scheduleId]);
+            $schedule = $scheduleStmt->fetch();
+            if (!$schedule || appointment_count($pdo, $scheduleId) >= (int) ($schedule['slot_limit'] ?? 0)) {
+                throw new RuntimeException('Selected schedule is unavailable or already full.');
+            }
 
-        $patientStmt = $pdo->prepare(
-            'INSERT INTO patients (full_name, birthdate, gender, address, cellphone, guardian_name)
-             VALUES (:full_name, :birthdate, :gender, :address, :cellphone, :guardian_name)'
-        );
-        $patientStmt->execute([
-            ':full_name' => $fullName,
-            ':birthdate' => $birthdate,
-            ':gender' => $gender,
-            ':address' => $address,
-            ':cellphone' => $cellphone,
-            ':guardian_name' => $guardianName,
-        ]);
+            $fullName = post_string('full_name', user_display_name($user));
+            $birthdate = (string) ($_POST['birthdate'] ?? '2000-01-01');
+            $gender = (string) ($_POST['gender'] ?? 'Other');
+            $address = post_string('address');
+            $cellphone = post_string('cellphone');
+            $guardianName = post_string('guardian_name');
+            $concern = post_string('concern');
 
-        $patientId = (int) $pdo->lastInsertId();
-        $code = 'BBHC-' . date('Y') . '-' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
-        $appointmentStmt = $pdo->prepare(
-            'INSERT INTO appointments (user_id, patient_id, schedule_id, appointment_code, concern, status, remarks)
-             VALUES (:user_id, :patient_id, :schedule_id, :appointment_code, :concern, :status, :remarks)'
-        );
-        $appointmentStmt->execute([
-            ':user_id' => $user['id'],
-            ':patient_id' => $patientId,
-            ':schedule_id' => $scheduleId,
-            ':appointment_code' => $code,
-            ':concern' => $concern,
-            ':status' => 'pending',
-            ':remarks' => 'Appointment request submitted online. Please wait for staff review.',
-        ]);
+            $patientStmt = $pdo->prepare(
+                'INSERT INTO patients (full_name, birthdate, gender, address, cellphone, guardian_name)
+                 VALUES (:full_name, :birthdate, :gender, :address, :cellphone, :guardian_name)'
+            );
+            $patientStmt->execute([
+                ':full_name' => $fullName,
+                ':birthdate' => $birthdate,
+                ':gender' => $gender,
+                ':address' => $address,
+                ':cellphone' => $cellphone,
+                ':guardian_name' => $guardianName,
+            ]);
 
-        create_notification($pdo, (int) $user['id'], 'Appointment ' . $code . ' was submitted.');
+            $patientId = (int) $pdo->lastInsertId();
+            $code = 'BBHC-' . date('Y') . '-' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+            $appointmentStmt = $pdo->prepare(
+                'INSERT INTO appointments (user_id, patient_id, schedule_id, appointment_code, concern, status, remarks)
+                 VALUES (:user_id, :patient_id, :schedule_id, :appointment_code, :concern, :status, :remarks)'
+            );
+            $appointmentStmt->execute([
+                ':user_id' => $user['id'],
+                ':patient_id' => $patientId,
+                ':schedule_id' => $scheduleId,
+                ':appointment_code' => $code,
+                ':concern' => $concern,
+                ':status' => 'pending',
+                ':remarks' => 'Appointment request submitted online. Please wait for staff review.',
+            ]);
+            $pdo->commit();
 
-        flash_to_page('dashboard', 'Appointment request submitted. Your code is ' . $code . '.');
+            try { create_notification($pdo, (int) $user['id'], 'Appointment ' . $code . ' was submitted.'); } catch (Throwable) { /* The appointment booking is already committed. */ }
+            flash_to_page('dashboard', 'Appointment request submitted. Your code is ' . $code . '.');
+        } catch (Throwable $error) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            flash_to_page('schedule', $error instanceof RuntimeException ? $error->getMessage() : 'Could not submit your appointment. Please try again.', 'error');
+        }
     }
 }
 
@@ -1416,7 +1471,8 @@ function schedule_display_label(array $schedule): string
     .quick-link strong { color:#173238; font-size:.92rem; }
     .quick-link small { margin-top:4px; color:#6b8181; font-size:.78rem; line-height:1.4; }
     .quick-arrow { margin-left:auto; color:#087f73; font-size:1.2rem; }
-    .page-intro { margin:0 0 20px; }
+    .skip-link { position:absolute; left:-9999px; top:8px; z-index:1000; padding:10px 14px; border-radius:8px; background:#fff; color:#075e57; box-shadow:0 2px 12px rgba(0,0,0,.2); }
+    .skip-link:focus { left:12px; }\n    .page-intro { margin:0 0 20px; }
     .page-intro h1 { max-width:none; margin:10px 0 6px; color:#173238; font:700 clamp(1.8rem,3vw,2.5rem)/1.12 var(--sans); letter-spacing:-.035em; }
     .page-intro p { margin:0; color:#647a7c; }
     .portal-content .schedule-page { margin-top:0; }
@@ -1528,12 +1584,13 @@ function schedule_display_label(array $schedule): string
   </aside>
   <button type="button" class="sidebar-backdrop" id="sidebarBackdrop" aria-label="Close navigation"></button>
   <div class="portal-main">
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
     <header class="portal-topbar">
       <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open navigation" aria-expanded="false" aria-controls="portalSidebar"><span></span><span></span><span></span></button>
       <div class="topbar-page"><span>Barangay Balagan Health Center</span><strong><?php echo e(['dashboard' => 'Dashboard', 'profile' => 'My Profile', 'appointments' => 'My Appointments', 'schedule' => 'Appointment Schedule'][$page] ?? 'Resident Portal'); ?></strong></div>
       <a class="topbar-profile" href="index.php?page=profile"><span class="topbar-avatar" aria-hidden="true"><?php echo e(strtoupper(substr(user_display_name(current_user() ?? []), 0, 1))); ?></span><span><?php echo e(user_display_name(current_user() ?? [])); ?></span></a>
     </header>
-    <main class="portal-content">
+    <main class="portal-content" id="mainContent">
       <?php if ($message !== ''): ?><div class="alert <?php echo $type === 'error' ? 'error' : ''; ?> reveal is-visible"><?php echo e($message); ?></div><?php endif; ?>
       <?php if (isset($legalPages[$page])): ?>
         <section class="section reveal is-visible" style="padding-top:18px;"><div class="panel terms-copy"><?php render_legal_page($legalPages[$page], 'index.php?page=dashboard', 'Back to dashboard'); ?></div></section>
@@ -1629,6 +1686,22 @@ function schedule_display_label(array $schedule): string
                         <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
                         <button class="tiny-btn" type="submit">Cancel / Rebook</button>
                       </form>
+                      <?php
+                        $alternativeSchedules = array_values(array_filter($bookableSchedules, static fn(array $candidate): bool => (int) $candidate['id'] !== (int) $appointment['schedule_id']));
+                      ?>
+                      <?php if ($alternativeSchedules): ?>
+                        <form method="post" style="margin-top:8px;">
+                          <input type="hidden" name="action" value="reschedule_appointment">
+                          <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                          <label class="sr-only" for="reschedule-<?php echo (int) $appointment['id']; ?>">Choose a new schedule</label>
+                          <select id="reschedule-<?php echo (int) $appointment['id']; ?>" name="schedule_id" required>
+                            <?php foreach ($alternativeSchedules as $candidate): ?>
+                              <option value="<?php echo (int) $candidate['id']; ?>"><?php echo e(schedule_display_label($candidate)); ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                          <button class="tiny-btn" type="submit" style="margin-top:6px;">Reschedule</button>
+                        </form>
+                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
                 </tr>
@@ -1772,6 +1845,33 @@ function schedule_display_label(array $schedule): string
           </div>
         </aside>
       </section>
+        <?php
+          $upcomingReminders = array_values(array_filter($userAppointments, static fn(array $appointment): bool =>
+              in_array($appointment['status'], ['pending', 'confirmed'], true) && $appointment['schedule_date'] >= date('Y-m-d')
+          ));
+          usort($upcomingReminders, static fn(array $left, array $right): int =>
+              [$left['schedule_date'], $left['start_time']] <=> [$right['schedule_date'], $right['start_time']]
+          );
+          $upcomingReminders = array_slice($upcomingReminders, 0, 3);
+        ?>
+        <section class="section" aria-labelledby="upcoming-reminders-title">
+          <div class="section-head">
+            <div><h2 id="upcoming-reminders-title">Upcoming appointment reminders</h2><p>Check the schedule and current status before your visit.</p></div>
+            <a class="tiny-btn" href="index.php?page=appointments">Manage appointments</a>
+          </div>
+          <?php if ($upcomingReminders): ?>
+            <div class="slot-grid">
+              <?php foreach ($upcomingReminders as $reminder): ?>
+                <article class="slot">
+                  <div><strong><?php echo e($reminder['appointment_code']); ?></strong><small><?php echo e(format_date($reminder['schedule_date'])); ?> · <?php echo e(format_time($reminder['start_time'])); ?>–<?php echo e(format_time($reminder['end_time'])); ?><br><?php echo e($reminder['service_name']); ?></small></div>
+                  <span class="tag <?php echo e($reminder['status']); ?>"><?php echo e($statusLabels[$reminder['status']] ?? $reminder['status']); ?></span>
+                </article>
+              <?php endforeach; ?>
+            </div>
+          <?php else: ?>
+            <div class="empty">No upcoming appointment. <a href="index.php?page=schedule">Browse available schedules</a>.</div>
+          <?php endif; ?>
+        </section>
         <section class="quick-links" aria-label="Quick actions">
           <a class="quick-link" href="index.php?page=schedule"><span class="quick-link-icon">＋</span><span><strong>Request an appointment</strong><small>Browse open schedules and choose a time.</small></span><span class="quick-arrow">→</span></a>
           <a class="quick-link" href="index.php?page=appointments"><span class="quick-link-icon">✓</span><span><strong>View my appointments</strong><small>Check request status, details, and remarks.</small></span><span class="quick-arrow">→</span></a>

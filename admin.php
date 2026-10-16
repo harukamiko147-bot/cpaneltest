@@ -15,7 +15,7 @@ $type = (string) ($_GET['type'] ?? 'success');
 $editingStaffId = isset($_GET['edit_staff']) ? (int) $_GET['edit_staff'] : 0;
 $appointmentSearch = trim((string) ($_GET['appointment_search'] ?? ''));
 $appointmentStatusFilter = (string) ($_GET['appointment_status'] ?? '');
-$appointmentDateFilter = (string) ($_GET['appointment_date'] ?? '');
+$appointmentDateFilter = (string) ($_GET['appointment_date'] ?? date('Y-m-d'));
 
 $statusLabels = [
     'pending' => 'Pending',
