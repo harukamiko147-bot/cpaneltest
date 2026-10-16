@@ -1,0 +1,11 @@
+/sessions/
+/uploads/*
+/config.local.php
+/public_html/config.local.php
+/.env
+/.env.*
+!/.env.example
+*.zip
+.*.bkp
+.*.dtmp
+/barangay-balagan-health-center-php-app-clean/
