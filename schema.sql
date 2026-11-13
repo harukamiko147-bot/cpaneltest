@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(60) NOT NULL,
   email VARCHAR(120) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+  role ENUM('patient', 'admin') NOT NULL DEFAULT 'patient',
   birthdate DATE NOT NULL,
   gender ENUM('Female', 'Male', 'Other') NOT NULL,
   address VARCHAR(255) NOT NULL,
