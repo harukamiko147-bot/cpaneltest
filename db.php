@@ -148,7 +148,7 @@ function login_user(array $user): void
         'last_name' => (string) $user['last_name'],
         'username' => (string) $user['username'],
         'email' => (string) $user['email'],
-        'role' => (string) ($user['role'] ?? 'user'),
+        'role' => (string) ($user['role'] ?? 'patient'),
         'photo_path' => (string) ($user['photo_path'] ?? ''),
     ];
 }
@@ -244,7 +244,19 @@ function ensure_schema_compatibility(PDO $pdo): void
 {
     $hasUserRole = $pdo->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();
     if (!$hasUserRole) {
-        $pdo->exec("ALTER TABLE users ADD COLUMN role ENUM('user', 'admin') NOT NULL DEFAULT 'user' AFTER password_hash");
+        $pdo->exec("ALTER TABLE users ADD COLUMN role ENUM('patient', 'admin') NOT NULL DEFAULT 'patient' AFTER password_hash");
+    } else {
+        $roleType = strtolower(str_replace(' ', '', (string) ($hasUserRole['Type'] ?? '')));
+        $roleDefault = (string) ($hasUserRole['Default'] ?? '');
+
+        if (str_contains($roleType, "'user'")) {
+            // Allow both old and new values during the data conversion.
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('user', 'patient', 'admin') NOT NULL DEFAULT 'patient'");
+            $pdo->exec("UPDATE users SET role = 'patient' WHERE role = 'user'");
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('patient', 'admin') NOT NULL DEFAULT 'patient'");
+        } elseif ($roleType !== "enum('patient','admin')" || $roleDefault !== 'patient') {
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('patient', 'admin') NOT NULL DEFAULT 'patient'");
+        }
     }
 
     $pdo->exec(
