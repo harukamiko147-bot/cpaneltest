@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':username' => $username,
                 ':email' => $email,
                 ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                ':role' => 'user',
+                ':role' => 'patient',
                 ':birthdate' => (string) ($_POST['birthdate'] ?? '2000-01-01'),
                 ':gender' => (string) ($_POST['gender'] ?? 'Other'),
                 ':address' => trim((string) ($_POST['address'] ?? '')),
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($user && password_verify($password, (string) $user['password_hash'])) {
             login_user($user);
-            if (($user['role'] ?? 'user') === 'admin') {
+            if (($user['role'] ?? 'patient') === 'admin') {
                 redirect_to('admin.php?page=dashboard&message=' . urlencode('Admin login successful.') . '&type=success');
             }
 
