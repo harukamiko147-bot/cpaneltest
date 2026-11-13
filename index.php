@@ -185,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $targetStmt = $pdo->prepare(
                 "SELECT id, slot_limit FROM schedules
-                 WHERE id = :id AND status = 'open' AND schedule_date > CURDATE()
+                 WHERE id = :id AND status = 'open' AND schedule_date >= CURDATE()
                  FOR UPDATE"
             );
             $targetStmt->execute([':id' => $scheduleId]);
@@ -222,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  FROM schedules sc
                  JOIN services sv ON sv.id = sc.service_id
                  LEFT JOIN clinic_staff st ON st.id = sc.staff_id
-                 WHERE sc.id = :id AND sc.status = 'open' AND sc.schedule_date > CURDATE()
+                 WHERE sc.id = :id AND sc.status = 'open' AND sc.schedule_date >= CURDATE()
                  FOR UPDATE"
             );
             $scheduleStmt->execute([':id' => $scheduleId]);
