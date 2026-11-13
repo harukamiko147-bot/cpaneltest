@@ -35,7 +35,7 @@ If your local MySQL root account has a password, set `BBHC_DB_PASS` in your envi
 
 ## Admin Login
 
-The app does not create a default administrator account. Create an admin account for an authorized clinic staff member in the `users` table before opening the admin dashboard at `admin.php`. Do not use a shared or default password. Resident users should use `index.php`.
+The app does not create a default administrator account. Create an admin account for an authorized clinic staff member in the `users` table before opening the admin dashboard at `admin.php`. Do not use a shared or default password. Patient sign-in accounts use the `patient` role in `users`; the separate `patients` table stores patient profiles linked to appointments. New registrations receive the `patient` role, and existing `user` roles are converted automatically when the app next connects to the database. Patients should use `index.php`.
 
 ## cPanel deployment
 
