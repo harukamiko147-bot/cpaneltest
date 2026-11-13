@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, (string) $user['password_hash']) && ($user['role'] ?? 'user') === 'admin') {
+        if ($user && password_verify($password, (string) $user['password_hash']) && ($user['role'] ?? 'patient') === 'admin') {
             login_user($user);
             redirect_to('admin.php?page=dashboard&message=' . urlencode('Admin login successful.') . '&type=success');
         }
